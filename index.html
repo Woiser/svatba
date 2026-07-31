@@ -115,6 +115,32 @@ let attempts = 1;
 let highScore = 0;
 let highScoreName = "Nikdo";
 let selectedDifficulty = "dospely";
+// ============================================================================
+// 🎵 AUDIO OBJEKTY (HUDBA A ZVUKY)
+// ============================================================================
+const introMusic = new Audio("intro.mp3");
+introMusic.volume = 0.5; // Hlasitost na 50 %
+
+const bgMusic = new Audio("hudba.mp3");
+bgMusic.loop = true; // Hlavní hudba pojede ve smyčce
+bgMusic.volume = 0.4; // Hlasitost na 30 %
+
+const starSound = new Audio("hvezda.mp3");
+starSound.volume = 0.6; // Hlasitost cinknutí hvězdy
+
+const gameOverSound = new Audio("konec.mp3");
+gameOverSound.volume = 0.5;
+
+const uwuSound = new Audio("uwu.mp3");
+uwuSound.volume = 0.6;
+
+// Hlídač, aby UWU zvuk nezazněl v Levelu 5 víckrát než jednou za hru
+let babySoundPlayed = false;
+// Hlídač: Jakmile skončí úvodní intro, plynule se zapne hudba na pozadí
+introMusic.addEventListener("ended", function() {
+    bgMusic.currentTime = 0;
+    bgMusic.play().catch(function(error) { console.log("Hudba čeká na kliknutí"); });
+});
 let babyTargetScore = 65; // Dynamicky upraveno později
 // ============================================================================
 // ⚙️ FUNKCE PRO DYNAMICKÉ NASTAVENÍ OBTÍŽNOSTI (KLIKNUTÍ NA TLAČÍTKO)
@@ -429,18 +455,22 @@ function spawnObstacle() {
     const isGround = Math.random() > 0.5;
     let icon = "⚽";
     let pool = [];
+    let isStar = Math.random() < 0.15; // 15% šance, že se místo překážky objeví hvězda ⭐
     
-    if (currentLevel === 0) {
-        pool = ["⚽", "👩", "👵", "🍺", "🍔"];
-    } else if (currentLevel === 1) {
-        pool = ["🍾", "🧾", "🍕", "🍟", "🍩"];
-    } else if (currentLevel === 2) {
-        pool = ["🎂", "🥂", "👵", "👩‍🦳"];
+    if (isStar) {
+        icon = "⭐";
     } else {
-        pool = ["🍼", "👶", "🧷", "⚡", "⛈️"];
+        if (currentLevel === 0) {
+            pool = ["⚽", "👩", "👵", "🍺", "🍔"];
+        } else if (currentLevel === 1) {
+            pool = ["🍾", "🧾", "🍕", "🍟", "🍩"];
+        } else if (currentLevel === 2) {
+            pool = ["🎂", "🥂", "👵", "👩‍🦳"];
+        } else {
+            pool = ["🍼", "👶", "🧷", "⚡", "⛈️"];
+        }
+        icon = pool[Math.floor(Math.random() * pool.length)];
     }
-    
-    icon = pool[Math.floor(Math.random() * pool.length)];
     
     // Nastavení základní rychlosti podle zvolené obtížnosti
     let baseSpeed = 5.5;
@@ -471,7 +501,8 @@ function spawnObstacle() {
         speed: currentSpeed,
         y: spawnY,
         label: icon,
-        passed: false
+        passed: false,
+        isStar: isStar // Uloží informaci, že tento objekt je hvězda
     });
 }
 
@@ -481,6 +512,16 @@ function spawnObstacle() {
 function startNewGame() {
     // Schováme menu s tlačítky, když se aktivně hraje
     document.getElementById("difficultyMenu").style.display = "none";
+    
+    // ZASTAVÍME A RESETUJEME VŠECHNU HUDBU (Důležité pro restart hry po prohře)
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+    introMusic.pause();
+    introMusic.currentTime = 0;
+    babySoundPlayed = false; // Resetuje hlídače pro nový pokus
+    
+    // SPUSTÍME POUZE ÚVODNÍ PÍSNIČKU
+    introMusic.play().catch(function(error) { console.log("Intro čeká na interakci"); });
     
     obstacles = [];
     score = 0;
@@ -589,6 +630,12 @@ function gameLoop() {
             mimino.x = 150;
             mimino.update();
             mimino.draw();
+        if (!mimino.soundPlayed) {
+                if (typeof uwuSound !== "undefined") {
+                    uwuSound.play().catch(function(e) { console.log(e); });
+                }
+                mimino.soundPlayed = true; // Označíme přímo na objektu miminka, že zvuk hrál
+            }
         }
     }
 
@@ -631,7 +678,34 @@ function gameLoop() {
             let hitBaby = (currentLevel === 4 && score > babyTargetScore) && checkCollision(mimino, obs);
             
             if (hitGroom === true || hitBride === true || hitCat === true || hitBaby === true) {
-                gameOver = true;
+                if (obs.isStar === true) {
+                    // SEBRÁNÍ HVĚZDY: Přičti 5 bodů, přehraj zvuk a smaž ji
+                    score = score + 5;
+                    
+                    starSound.currentTime = 0; // Umožní přehrát cinknutí ihned znovu
+                    starSound.play().catch(function(e){});
+                    
+                    obstacles.splice(i, 1);
+                    
+                    // Kontrola postupu do dalšího levelu po skokovém navýšení bodů
+                    if (score >= LEVELS[currentLevel].target) {
+                        if (currentLevel < LEVELS.length - 1) {
+                            currentLevel = currentLevel + 1;
+                            obstacles = [];
+                        } else {
+                            gameWon = true;
+                        }
+                    }
+                    continue; 
+                                } else {
+                    // NÁRAZ DO PŘEKÁŽKY: Prohra, vypnutí hudby a spuštění zvuku prohry
+                    gameOver = true;
+                    introMusic.pause();
+                    bgMusic.pause();
+                    
+                    gameOverSound.currentTime = 0;
+                    gameOverSound.play().catch(function(e){});
+                }
             }
             
             // Určení nejvíce vpravo stojící postavy v zástupu
@@ -652,15 +726,19 @@ function gameLoop() {
             
             // Přičtení bodu po úspěšném překonání celé řady hrdinů
             if (obs.x + obs.width < rightmostX && obs.passed === false) {
-                score = score + 1;
                 obs.passed = true;
                 
-                if (score >= LEVELS[currentLevel].target) {
-                    if (currentLevel < LEVELS.length - 1) {
-                        currentLevel = currentLevel + 1;
-                        obstacles = [];
-                    } else {
-                        gameWon = true;
+                // Klasický +1 bod dáváme pouze za překážky, ne za hvězdy
+                if (obs.isStar !== true) {
+                    score = score + 1;
+                    
+                    if (score >= LEVELS[currentLevel].target) {
+                        if (currentLevel < LEVELS.length - 1) {
+                            currentLevel = currentLevel + 1;
+                            obstacles = [];
+                        } else {
+                            gameWon = true;
+                        }
                     }
                 }
             }
