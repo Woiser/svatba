@@ -1,0 +1,794 @@
+28.8.2026
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Milanek a Verca: Cesta k oltari</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #fdf2f8;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 10px;
+            box-sizing: border-box;
+            /* Zabrání nechtěnému označování textu a přibližování stránky na mobilu */
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        h1 {
+            color: #d63384;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 5vw; /* Velikost písma se přizpůsobí displeji */
+            max-size: 24px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        #gameCanvas {
+            border: 4px solid #d63384;
+            border-radius: 10px;
+            background-color: #bae6fd;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            /* Šířka plátna se přizpůsobí mobilu, maximálně však 800px */
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+        }
+        #difficultyMenu {
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            max-width: 800px;
+            justify-content: center;
+            flex-wrap: wrap; /* Na malých mobilech se tlačítka naskládají pod sebe */
+        }
+        #difficultyMenu button {
+            color: white;
+            border: none;
+            padding: 12px 16px; /* Trochu větší pro pohodlné mačkání prstem */
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            flex: 1;
+            min-width: 100px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .controls {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #555;
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>💍 Milanek &amp; Verca: Cesta k oltari 💍</h1>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    
+    <div id="difficultyMenu" style="margin-top: 15px; display: flex; gap: 10px;">
+        <button onclick="setDifficulty('dite')" style="background: #22c55e; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px;">👶 Dítě</button>
+        <button onclick="setDifficulty('dospely')" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px;">👨 Dospělý</button>
+        <button onclick="setDifficulty('opilec')" style="background: #f59e0b; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px;">🥴 Opilec</button>
+        <button onclick="setDifficulty('nemozne')" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px;">💀 Nemožné</button>
+    </div>
+
+    <div class="controls">Stiskni <strong>MEZERNIK</strong> nebo <strong>KLIKNI</strong> pro skok!</div>
+
+<script>
+// HLAVNÍ NASTAVENÍ PROHLÍŽEČE A PLÁTNA
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// DEFINICE LEVELŮ S DOČASNÝMI LIMITI (PŘENASTAVÍ SE PODLE OBTÍŽNOSTI)
+const LEVELS = [
+    { name: "LEVEL 1: Milanek bezi zivotem 🐱", target: 10 },
+    { name: "LEVEL 2: Milanek na rozlucce se svobodou 🍻", target: 25 }, 
+    { name: "LEVEL 3: Beh k oltari 💒", target: 35 }, 
+    { name: "LEVEL 4: Beh zivotem 🍼🏡🐱", target: 45 },
+    { name: "LEVEL 5: Nekonecne manzelstvi! ♾️❤️", target: Infinity }
+];
+
+// STAVOVÉ PROMĚNNÉ PRO CHOD ENGNEU
+let currentLevel = 0;
+let gameActive = false;
+let gameOver = false;
+let gameWon = false;
+let score = 0;
+let obstacles = [];
+let spawnTimer = 0;
+let hue = 0;
+let attempts = 1;
+
+// GLOBÁLNÍ PROMĚNNÉ PRO REKORDY A DYNAMICKÉ OBTÍŽNOSTI
+let highScore = 0;
+let highScoreName = "Nikdo";
+let selectedDifficulty = "dospely";
+let babyTargetScore = 65; // Dynamicky upraveno později
+// ============================================================================
+// ⚙️ FUNKCE PRO DYNAMICKÉ NASTAVENÍ OBTÍŽNOSTI (KLIKNUTÍ NA TLAČÍTKO)
+// ============================================================================
+function setDifficulty(type) {
+    selectedDifficulty = type;
+    
+    // 1. Nastavení gravitace (pro opilce slabší plachtění a pomalejší dopad)
+    let g = 0.6;
+    if (type === "opilec") { 
+        g = 0.3; 
+    }
+    milanek.gravity = g;
+    verca.gravity = g;
+    stela.gravity = g;
+    mimino.gravity = g;
+    
+    // 2. NASTAVENÍ BODOVÝCH LIMITŮ PRO ÚROVNĚ PODLE TVÝCH TABULEK
+    LEVELS[0].target = 10; // LEVEL 1 trvá vždy přesně 10 bodů pro všechny
+    
+    if (type === "dite") {
+        LEVELS[1].target = 10 + 15; // Cíl pro konec LEVELU 2 je 25 bodů
+        LEVELS[2].target = 25 + 15; // Cíl pro konec LEVELU 3 je 40 bodů
+        LEVELS[3].target = 40 + 15; // Cíl pro konec LEVELU 4 je 55 bodů
+    } else if (type === "dospely") {
+        LEVELS[1].target = 10 + 15; // Cíl pro konec LEVELU 2 je 25 bodů
+        LEVELS[2].target = 25 + 10; // Cíl pro konec LEVELU 3 je 35 bodů
+        LEVELS[3].target = 35 + 10; // Cíl pro konec LEVELU 4 je 45 bodů
+    } else if (type === "opilec") {
+        LEVELS[1].target = 10 + 5;  // Cíl pro konec LEVELU 2 je 15 bodů
+        LEVELS[2].target = 15 + 15; // Cíl pro konec LEVELU 3 je 30 bodů
+        LEVELS[3].target = 30 + 10; // Cíl pro konec LEVELU 4 je 40 bodů
+    } else if (type === "nemozne") {
+        LEVELS[1].target = 10 + 10; // Cíl pro konec LEVELU 2 je 20 bodů
+        LEVELS[2].target = 20 + 10; // Cíl pro konec LEVELU 3 je 30 bodů
+        LEVELS[3].target = 30 + 10; // Cíl pro konec LEVELU 4 je 40 bodů
+    }
+    
+    // Miminko vyběhne vždy přesně o 20 bodů později, než končí LEVEL 4
+    babyTargetScore = LEVELS[3].target + 20;
+    
+    // Po kliknutí na tlačítko obtížnosti rovnou spouštíme hru od začátku
+    handleAction();
+}
+// ============================================================================
+// 🤵 OBJEKT ŽENICHA: MILÁNEK
+// ============================================================================
+const milanek = {
+    x: 40,
+    y: 300,
+    width: 35,
+    height: 60,
+    velocity: 0,
+    gravity: 0.6,
+    lift: -12,
+    isJumping: false,
+    
+    update() {
+        if (gameActive === false || gameOver === true || gameWon === true) {
+            return;
+        }
+        this.velocity = this.velocity + this.gravity;
+        this.y = this.y + this.velocity;
+        if (this.y > 300) {
+            this.y = 300;
+            this.velocity = 0;
+            this.isJumping = false;
+        }
+    },
+    
+    jump() {
+        if (this.isJumping === false) {
+            this.velocity = this.lift;
+            this.isJumping = true;
+        }
+    },
+    
+    draw() {
+        ctx.save();
+        // Hlava
+        ctx.fillStyle = "#ffdbac";
+        ctx.beginPath();
+        ctx.arc(this.x + 17.5, this.y + 10, 10, 0, Math.PI * 2);
+        ctx.fill();
+        // Vlasy
+        ctx.fillStyle = "#4a3728";
+        ctx.beginPath();
+        ctx.arc(this.x + 17.5, this.y + 7, 10, Math.PI, 0);
+        ctx.fill();
+        // Sako
+        ctx.fillStyle = "#1e293b";
+        ctx.fillRect(this.x + 4, this.y + 20, 27, 28);
+        // Košile (bílý výstřih)
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(this.x + 13.5, this.y + 20);
+        ctx.lineTo(this.x + 21.5, this.y + 20);
+        ctx.lineTo(this.x + 17.5, this.y + 28);
+        ctx.fill();
+        // Růžový motýlek
+        ctx.fillStyle = "#d63384";
+        ctx.beginPath();
+        ctx.moveTo(this.x + 13.5, this.y + 22);
+        ctx.lineTo(this.x + 21.5, this.y + 26);
+        ctx.lineTo(this.x + 21.5, this.y + 22);
+        ctx.lineTo(this.x + 13.5, this.y + 26);
+        ctx.fill();
+        // Kalhoty a boty
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(this.x + 6, this.y + 48, 7, 12);
+        ctx.fillRect(this.x + 22, this.y + 48, 7, 12);
+        ctx.restore();
+    }
+};
+
+// ============================================================================
+// 👰 OBJEKT NEVĚSTY: VERČA
+// ============================================================================
+const verca = {
+    x: 80,
+    y: 300,
+    width: 35,
+    height: 60,
+    velocity: 0,
+    gravity: 0.6,
+    lift: -12,
+    isJumping: false,
+    
+    update() {
+        if (gameActive === false || gameOver === true || gameWon === true) {
+            return;
+        }
+        this.velocity = this.velocity + this.gravity;
+        this.y = this.y + this.velocity;
+        if (this.y > 300) {
+            this.y = 300;
+            this.velocity = 0;
+            this.isJumping = false;
+        }
+    },
+    
+    jump() {
+        if (this.isJumping === false) {
+            this.velocity = this.lift;
+            this.isJumping = true;
+        }
+    },
+    
+    draw() {
+        ctx.save();
+        // Závoj v pozadí
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        ctx.fillRect(this.x - 2, this.y + 12, 10, 35);
+        // Hlava
+        ctx.fillStyle = "#ffdbac";
+        ctx.beginPath();
+        ctx.arc(this.x + 17.5, this.y + 10, 10, 0, Math.PI * 2);
+        ctx.fill();
+        // Vlasy
+        ctx.fillStyle = "#f59e0b";
+        ctx.beginPath();
+        ctx.arc(this.x + 17.5, this.y + 8, 11, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.fill();
+        // Svatební šaty (sukně)
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(this.x + 6, this.y + 20);
+        ctx.lineTo(this.x + 29, this.y + 20);
+        ctx.lineTo(this.x + 35, this.y + 55);
+        ctx.lineTo(this.x, this.y + 55);
+        ctx.closePath();
+        ctx.fill();
+        // Růžový pásek
+        ctx.fillStyle = "#f472b6";
+        ctx.fillRect(this.x + 5, this.y + 30, 25, 4);
+        // Střevíčky
+        ctx.fillStyle = "#fce7f3";
+        ctx.fillRect(this.x + 8, this.y + 55, 6, 5);
+        ctx.fillRect(this.x + 21, this.y + 55, 6, 5);
+        ctx.restore();
+    }
+};
+
+// ============================================================================
+// 🐱 OBJEKT KOČKY: STELA
+// ============================================================================
+const stela = {
+    x: 120,
+    y: 330,
+    width: 25,
+    height: 25,
+    velocity: 0,
+    gravity: 0.6,
+    lift: -12,
+    isJumping: false,
+    
+    update() {
+        if (gameActive === false || gameOver === true || gameWon === true) {
+            return;
+        }
+        this.velocity = this.velocity + this.gravity;
+        this.y = this.y + this.velocity;
+        if (this.y > 330) {
+            this.y = 330;
+            this.velocity = 0;
+            this.isJumping = false;
+        }
+    },
+    
+    jump() {
+        if (this.isJumping === false) {
+            this.velocity = this.lift;
+            this.isJumping = true;
+        }
+    },
+    
+    draw() {
+        ctx.save();
+        ctx.fillStyle = "#64748b";
+        ctx.fillRect(this.x, this.y + 8, this.width, 17);
+        ctx.fillRect(this.x + 4, this.y, 17, 10);
+        // Ouška
+        ctx.beginPath();
+        ctx.moveTo(this.x + 4, this.y); ctx.lineTo(this.x + 8, this.y - 5); ctx.lineTo(this.x + 10, this.y);
+        ctx.moveTo(this.x + 21, this.y); ctx.lineTo(this.x + 17, this.y - 5); ctx.lineTo(this.x + 15, this.y);
+        ctx.fill();
+        // Vnitřek oušek
+        ctx.fillStyle = "#fda4af";
+        ctx.beginPath();
+        ctx.moveTo(this.x + 5, this.y); ctx.lineTo(this.x + 7, this.y - 3); ctx.lineTo(this.x + 8, this.y);
+        ctx.moveTo(this.x + 20, this.y); ctx.lineTo(this.x + 18, this.y - 3); ctx.lineTo(this.x + 17, this.y);
+        ctx.fill();
+        // Zelené oči
+        ctx.fillStyle = "#4ade80";
+        ctx.fillRect(this.x + 7, this.y + 3, 3, 3);
+        ctx.fillRect(this.x + 15, this.y + 3, 3, 3);
+        // Ocásek
+        ctx.strokeStyle = "#64748b";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y + 15);
+        ctx.quadraticCurveTo(this.x - 8, this.y + 10, this.x - 5, this.y + 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+};
+
+// ============================================================================
+// 👶 OBJEKT MIMINKA (PŘIPOJÍ SE V LEVELU 5)
+// ============================================================================
+const mimino = {
+    x: 150,
+    y: 335,
+    width: 20,
+    height: 20,
+    velocity: 0,
+    gravity: 0.6,
+    lift: -12,
+    isJumping: false,
+    
+    update() {
+        if (gameActive === false || gameOver === true || gameWon === true) {
+            return;
+        }
+        this.velocity = this.velocity + this.gravity;
+        this.y = this.y + this.velocity;
+        if (this.y > 335) {
+            this.y = 335;
+            this.velocity = 0;
+            this.isJumping = false;
+        }
+    },
+    
+    jump() {
+        if (this.isJumping === false) {
+            this.velocity = this.lift;
+            this.isJumping = true;
+        }
+    },
+    
+    draw() {
+        ctx.save();
+        // Modré dupačky
+        ctx.fillStyle = "#38bdf8";
+        ctx.fillRect(this.x + 3, this.y + 11, 14, 9);
+        // Hlavička
+        ctx.fillStyle = "#ffdbac";
+        ctx.beginPath();
+        ctx.arc(this.x + 10, this.y + 5, 6, 0, Math.PI * 2);
+        ctx.fill();
+        // Vlásky
+        ctx.fillStyle = "#6b7280";
+        ctx.beginPath();
+        ctx.arc(this.x + 10, this.y + 2, 6, Math.PI, 0);
+        ctx.fill();
+        // Dudlík
+        ctx.fillStyle = "#f472b6";
+        ctx.beginPath();
+        ctx.arc(this.x + 10, this.y + 6, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+};
+// ============================================================================
+// 🚀 GENERÁTOR PŘEKÁŽEK (PODLE LEVELŮ A OBTÍŽNOSTI)
+// ============================================================================
+function spawnObstacle() {
+    if (gameActive === false || gameOver === true || gameWon === true) {
+        return;
+    }
+    
+    const isGround = Math.random() > 0.5;
+    let icon = "⚽";
+    let pool = [];
+    
+    if (currentLevel === 0) {
+        pool = ["⚽", "👩", "👵", "🍺", "🍔"];
+    } else if (currentLevel === 1) {
+        pool = ["🍾", "🧾", "🍕", "🍟", "🍩"];
+    } else if (currentLevel === 2) {
+        pool = ["🎂", "🥂", "👵", "👩‍🦳"];
+    } else {
+        pool = ["🍼", "👶", "🧷", "⚡", "⛈️"];
+    }
+    
+    icon = pool[Math.floor(Math.random() * pool.length)];
+    
+    // Nastavení základní rychlosti podle zvolené obtížnosti
+    let baseSpeed = 5.5;
+    if (selectedDifficulty === "dite") { 
+        baseSpeed = 3.5; 
+    }
+    if (selectedDifficulty === "nemozne") { 
+        baseSpeed = 9.5; 
+    }
+    
+    let currentSpeed = baseSpeed + (currentLevel * 0.5);
+    
+    // Zrychlování v Levelu 5 začíná plynule od postupu do 5. levelu
+    if (currentLevel === 4 && score > LEVELS[3].target) {
+        let extraPoints = score - LEVELS[3].target;
+        currentSpeed = currentSpeed + (Math.floor(extraPoints / 10) * 0.3);
+    }
+    
+    let spawnY = 230;
+    if (isGround === true) {
+        spawnY = 325;
+    }
+    
+    obstacles.push({
+        x: canvas.width,
+        width: 30,
+        height: 30,
+        speed: currentSpeed,
+        y: spawnY,
+        label: icon,
+        passed: false
+    });
+}
+
+// ============================================================================
+// 🔄 RESETOVÁNÍ HRY (START NOVÉHO POKUSU)
+// ============================================================================
+function startNewGame() {
+    // Schováme menu s tlačítky, když se aktivně hraje
+    document.getElementById("difficultyMenu").style.display = "none";
+    
+    obstacles = [];
+    score = 0;
+    currentLevel = 0;
+    spawnTimer = 0;
+    
+    milanek.y = 300;
+    milanek.velocity = 0;
+    milanek.isJumping = false;
+    
+    verca.y = 300;
+    verca.velocity = 0;
+    verca.isJumping = false;
+    
+    stela.y = 330;
+    stela.velocity = 0;
+    stela.isJumping = false;
+    
+    mimino.y = 335;
+    mimino.velocity = 0;
+    mimino.isJumping = false;
+    
+    gameOver = false;
+    gameWon = false;
+    gameActive = true;
+}
+
+// ============================================================================
+// 📐 MATEMATICKÁ KONTROLA NÁRAZU (KOLIZE)
+// ============================================================================
+function checkCollision(rect1, rect2) {
+    if (rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x && rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y) {
+        return true;
+    }
+    return false;
+}
+
+// ============================================================================
+// 🎮 HLAVNÍ HERNÍ SMYČKA (1. ČÁST - VYKRESLOVÁNÍ)
+// ============================================================================
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Pozadí podle levelu
+    if (currentLevel === 0) {
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, "#bae6fd");
+        gradient.addColorStop(1, "#e0f2fe");
+        ctx.fillStyle = gradient;
+    } else if (currentLevel === 1) {
+        hue = (hue + 0.5) % 360;
+        ctx.fillStyle = "hsla(" + hue + ", 70%, 80%, 1)";
+    } else if (currentLevel === 2) {
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, "#fbcfe8");
+        gradient.addColorStop(1, "#fce7f3");
+        ctx.fillStyle = gradient;
+    } else {
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, "#bbf7d0");
+        gradient.addColorStop(1, "#dcfce7");
+        ctx.fillStyle = gradient;
+    }
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Vykreslení zelené trávy
+    ctx.fillStyle = "#71bc68";
+    ctx.fillRect(0, 360, canvas.width, 40);
+
+    // Aktualizace a zobrazení postav podle levelu (Zarovnaný těsný zástup)
+    if (currentLevel === 0) {
+        milanek.x = 80;
+        stela.x = 140;
+        milanek.update();
+        milanek.draw();
+        stela.update();
+        stela.draw();
+    } else if (currentLevel === 1) {
+        milanek.x = 40;
+        verca.x = 350;
+        milanek.update();
+        milanek.draw();
+        verca.update();
+        verca.draw();
+    } else if (currentLevel === 2) {
+        milanek.x = 40;
+        verca.x = 100;
+        milanek.update();
+        milanek.draw();
+        verca.update();
+        verca.draw();
+    } else if (currentLevel === 3 || currentLevel === 4) {
+        milanek.x = 40;
+        verca.x = 80;
+        stela.x = 120;
+        
+        milanek.update();
+        milanek.draw();
+        verca.update();
+        verca.draw();
+        stela.update();
+        stela.draw();
+        
+        // Zobrazení miminka na scéně dynamicky podle obtížnosti (nad babyTargetScore)
+        if (currentLevel === 4 && score > babyTargetScore) {
+            mimino.x = 150;
+            mimino.update();
+            mimino.draw();
+        }
+    }
+
+    // Barevný progress bar na dně plátna
+    if (LEVELS[currentLevel].target !== Infinity) {
+        let progressRatio = score / LEVELS[currentLevel].target;
+        ctx.fillStyle = "rgba(214, 51, 132, 0.3)";
+        ctx.fillRect(0, 390, canvas.width, 10);
+        ctx.fillStyle = "#d63384";
+        ctx.fillRect(0, 390, canvas.width * progressRatio, 10);
+    } else {
+        ctx.fillStyle = "#d63384";
+        ctx.font = "14px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("♾️ N E K O N E Č N O ♾️", canvas.width / 2, 398);
+    }
+// ============================================================================
+    // 🎮 HLAVNÍ HERNÍ SMYČKA (2. ČÁST - LOGIKA S MIMINKEM)
+    // ============================================================================
+    if (gameActive === true && gameOver === false && gameWon === false) {
+        spawnTimer = spawnTimer + 1;
+        if (spawnTimer > 90) {
+            spawnObstacle();
+            spawnTimer = 0;
+        }
+        
+        for (let i = obstacles.length - 1; i >= 0; i = i - 1) {
+            let obs = obstacles[i];
+            obs.x = obs.x - obs.speed;
+            
+            // Vykreslení emoji překážky
+            ctx.font = "30px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(obs.label, obs.x + 15, obs.y + 25);
+            
+            // Kontrola kolizí pro jednotlivé postavy
+            let hitGroom = checkCollision(milanek, obs);
+            let hitBride = (currentLevel > 0) && checkCollision(verca, obs);
+            let hitCat = (currentLevel === 0 || currentLevel > 2) && checkCollision(stela, obs);
+            let hitBaby = (currentLevel === 4 && score > babyTargetScore) && checkCollision(mimino, obs);
+            
+            if (hitGroom === true || hitBride === true || hitCat === true || hitBaby === true) {
+                gameOver = true;
+            }
+            
+            // Určení nejvíce vpravo stojící postavy v zástupu
+            let rightmostX = milanek.x;
+            if (currentLevel === 0) {
+                rightmostX = stela.x;
+            } else if (currentLevel === 1 || currentLevel === 2) {
+                rightmostX = verca.x;
+            } else if (currentLevel === 3) {
+                rightmostX = stela.x;
+            } else if (currentLevel === 4) {
+                if (score > babyTargetScore) {
+                    rightmostX = mimino.x; // Překážka musí minout i miminko (150)
+                } else {
+                    rightmostX = stela.x;
+                }
+            }
+            
+            // Přičtení bodu po úspěšném překonání celé řady hrdinů
+            if (obs.x + obs.width < rightmostX && obs.passed === false) {
+                score = score + 1;
+                obs.passed = true;
+                
+                if (score >= LEVELS[currentLevel].target) {
+                    if (currentLevel < LEVELS.length - 1) {
+                        currentLevel = currentLevel + 1;
+                        obstacles = [];
+                    } else {
+                        gameWon = true;
+                    }
+                }
+            }
+            
+            // Odstranění překážky za levým okrajem plátna
+            if (obs.x + obs.width < 0) {
+                obstacles.splice(i, 1);
+            }
+        }
+    }
+    
+    // Zobrazení názvu úrovně a aktuálního skóre v rohu plátna
+    ctx.fillStyle = "#212529";
+    ctx.font = "bold 16px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText(LEVELS[currentLevel].name, 20, 40);
+    
+    let targetText = LEVELS[currentLevel].target;
+    if (targetText === Infinity) {
+        targetText = "♾️";
+    }
+    ctx.fillText("Skore: " + score + " / " + targetText, 20, 70);
+    
+    // ROZHRANÍ: ÚVODNÍ OBRAZOVKA
+    if (gameActive === false) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.font = "bold 26px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("💍 MILÁNEK & VERČA: CESTA K OLTÁŘI 💍", canvas.width / 2, canvas.height / 2 - 30);
+        ctx.font = "18px Arial";
+        ctx.fillStyle = "#fbcfe8";
+        ctx.fillText("Vyber obtížnost níže pro start hry", canvas.width / 2, canvas.height / 2 + 20);
+        
+        // Zobrazení menu na startovací ploše
+        document.getElementById("difficultyMenu").style.display = "flex";
+    }
+    
+    // ROZHRANÍ: GAME OVER (PROHRA)
+    if (gameOver === true) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        if (score > highScore) {
+            highScore = score;
+            let jm = prompt("🎉 NOVÝ REKORD! 🎉\nDosáhl jsi " + score + " bodů!\nNapiš své jméno:");
+            if (jm !== null && jm.trim() !== "") {
+                highScoreName = jm.trim();
+            } else {
+                highScoreName = "Anonym";
+            }
+        }
+        
+        ctx.fillStyle = "#ff4d4d";
+        ctx.font = "bold 36px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Svatba v ohrozeni! 💥", canvas.width / 2, canvas.height / 2 - 60);
+        ctx.fillStyle = "white";
+        ctx.font = "18px Arial";
+        ctx.fillText("Tvůj výsledek: " + score + " bodů (Pokus: " + attempts + ")", canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillStyle = "#fef08a";
+        ctx.font = "bold 18px Arial";
+        ctx.fillText("🏆 REKORD: " + highScoreName + " (" + highScore + " bodů)", canvas.width / 2, canvas.height / 2 + 30);
+        ctx.fillStyle = "#e0f2fe";
+        ctx.font = "14px Arial";
+        ctx.fillText("Zvol obtížnost níže pro nový pokus", canvas.width / 2, canvas.height / 2 + 80);
+        
+        // Zobrazení menu při prohře
+        document.getElementById("difficultyMenu").style.display = "flex";
+    }
+    
+    requestAnimationFrame(gameLoop);
+}
+
+// ============================================================================
+// 🕹️ MECHANIKA OVLÁDÁNÍ SKOKŮ PODLE ZÁSTUPU V LEVELECH
+// ============================================================================
+function handleAction() {
+    if (gameActive === false || gameOver === true || gameWon === true) {
+        if (gameOver === true) {
+            attempts = attempts + 1;
+        }
+        startNewGame();
+    } else {
+        if (currentLevel === 0) {
+            stela.jump();
+            setTimeout(function() { milanek.jump(); }, 120);
+        } else if (currentLevel === 1) {
+            milanek.jump();
+            verca.jump();
+        } else if (currentLevel === 2) {
+            verca.jump();
+            setTimeout(function() { milanek.jump(); }, 120);
+        } else if (currentLevel === 3 || currentLevel === 4) {
+            // Skákání zprava do leva podle toho, jak postavy potkávají překážku
+            if (currentLevel === 4 && score > babyTargetScore) {
+                // LEVEL 5 S MIMINKEM: Vlna jde zprava doleva: Mimino -> Stela -> Verča -> Milánek
+                mimino.jump();
+                setTimeout(function() { stela.jump(); }, 120);
+                setTimeout(function() { verca.jump(); }, 240);
+                setTimeout(function() { milanek.jump(); }, 360);
+            } else {
+                // LEVEL 4 S KOČKOU: Vlna jde zprava doleva: Stela -> Verča -> Milánek
+                stela.jump();
+                setTimeout(function() { verca.jump(); }, 120);
+                setTimeout(function() { milanek.jump(); }, 240);
+            }
+        }
+    }
+}
+
+// POSLUCHAČE UDÁLOSTÍ PRO KLÁVESNICI A MYŠ
+window.addEventListener("keydown", function(e) {
+    if (e.code === "Space") {
+        e.preventDefault();
+        handleAction();
+    }
+});
+
+// Bleskové ovládání dotykem pro mobilní telefony
+canvas.addEventListener("touchstart", function(e) {
+    e.preventDefault(); // Zamezí dvojitému kliknutí a zoomování na mobilu
+    handleAction();
+}, { passive: false });
+
+// NABĚHNUTÍ PRVNÍHO SNÍMKU HERNÍ SMYČKY
+gameLoop();
+</script>
+</body>
+</html>
