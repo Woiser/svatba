@@ -134,6 +134,12 @@ gameOverSound.volume = 0.5;
 const uwuSound = new Audio("uwu.mp3");
 uwuSound.volume = 0.6;
 
+const jumpSound = new Audio("skok.mp3");
+jumpSound.volume = 0.3; // Hlasitost pro klasický skok
+
+const jumpDrunkSound = new Audio("skokopilec.mp3");
+jumpDrunkSound.volume = 0.4; // Hlasitost pro opilecký skok
+
 // Hlídač, aby UWU zvuk nezazněl v Levelu 5 víckrát než jednou za hru
 let babySoundPlayed = false;
 // Hlídač: Jakmile skončí úvodní intro, plynule se zapne hudba na pozadí
@@ -818,6 +824,19 @@ function gameLoop() {
 // 🕹️ MECHANIKA OVLÁDÁNÍ SKOKŮ PODLE ZÁSTUPU V LEVELECH
 // ============================================================================
 function handleAction() {
+    // 🎵 PŘEHRÁNÍ DYNAMICKÉHO ZVUKU SKOKU (Spustí se hned při kliknutí/mezerníku)
+    if (gameActive === true && gameOver === false && gameWon === false) {
+        if (selectedDifficulty === "opilec") {
+            // Pokud hrajeme za opilce, pustí se speciální zvuk
+            jumpDrunkSound.currentTime = 0;
+            jumpDrunkSound.play().catch(function(e){});
+        } else {
+            // Pro všechny ostatní obtížnosti hraje klasický skok
+            jumpSound.currentTime = 0;
+            jumpSound.play().catch(function(e){});
+        }
+    }
+
     if (gameActive === false || gameOver === true || gameWon === true) {
         if (gameOver === true) {
             attempts = attempts + 1;
