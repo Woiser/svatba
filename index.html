@@ -110,6 +110,8 @@ let obstacles = [];
 let spawnTimer = 0;
 let hue = 0;
 let attempts = 1;
+let drunkJumpCount = 0;
+let drunkSpeedModifier = 1.0;
 
 // GLOBÁLNÍ PROMĚNNÉ PRO REKORDY A DYNAMICKÉ OBTÍŽNOSTI
 let highScore = 0;
@@ -132,7 +134,7 @@ const gameOverSound = new Audio("konec.mp3");
 gameOverSound.volume = 0.5;
 
 const uwuSound = new Audio("uwu.mp3");
-uwuSound.volume = 0.6;
+uwuSound.volume = 1.0; // Nastaveno na maximální hlasitost (100 %)
 
 const jumpSound = new Audio("skok.mp3");
 jumpSound.volume = 0.3; // Hlasitost pro klasický skok
@@ -157,12 +159,13 @@ function setDifficulty(type) {
     // 1. Nastavení gravitace (pro opilce slabší plachtění a pomalejší dopad)
     let g = 0.6;
     if (type === "opilec") { 
-        g = 0.3; 
+        g = 0.2; // Extra pomalé plachtění pro LEVEL 1
     }
     milanek.gravity = g;
     verca.gravity = g;
     stela.gravity = g;
     mimino.gravity = g;
+    holcicka.gravity = g; // Nastavení gravitace i pro holčičku
     
     // 2. NASTAVENÍ BODOVÝCH LIMITŮ PRO ÚROVNĚ PODLE TVÝCH TABULEK
     LEVELS[0].target = 10; // LEVEL 1 trvá vždy přesně 10 bodů pro všechny
@@ -393,6 +396,64 @@ const stela = {
         ctx.restore();
     }
 };
+// ============================================================================
+// 👧 OBJEKT HOLČIČKY: HOLCICKA
+// ============================================================================
+const holcicka = {
+    x: 120,
+    y: 320,
+    width: 25,
+    height: 35,
+    velocity: 0,
+    gravity: 0.6,
+    lift: -12,
+    isJumping: false,
+    
+    update() {
+        if (gameActive === false || gameOver === true || gameWon === true) {
+            return;
+        }
+        this.velocity = this.velocity + this.gravity;
+        this.y = this.y + this.velocity;
+        if (this.y > 320) {
+            this.y = 320;
+            this.velocity = 0;
+            this.isJumping = false;
+        }
+    },
+    
+    jump() {
+        if (this.isJumping === false) {
+            this.velocity = this.lift;
+            this.isJumping = true;
+        }
+    },
+    
+    draw() {
+        ctx.save();
+        // Hlavička
+        ctx.fillStyle = "#ffdbac";
+        ctx.beginPath();
+        ctx.arc(this.x + 12.5, this.y + 10, 8, 0, Math.PI * 2);
+        ctx.fill();
+        // Vlasy (culíky)
+        ctx.fillStyle = "#f59e0b";
+        ctx.beginPath();
+        ctx.arc(this.x + 5, this.y + 8, 4, 0, Math.PI * 2);
+        ctx.arc(this.x + 20, this.y + 8, 4, 0, Math.PI * 2);
+        ctx.fill();
+        // Růžové šatičky
+        ctx.fillStyle = "#f472b6";
+        ctx.beginPath();
+        ctx.moveTo(this.x + 5, this.y + 18);
+        ctx.lineTo(this.x + 20, this.y + 18);
+        ctx.lineTo(this.x + 25, this.y + 35);
+        ctx.lineTo(this.x, this.y + 35);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+};
 
 // ============================================================================
 // 👶 OBJEKT MIMINKA (PŘIPOJÍ SE V LEVELU 5)
@@ -464,16 +525,16 @@ function spawnObstacle() {
     let isStar = Math.random() < 0.15; // 15% šance, že se místo překážky objeví hvězda ⭐
     
     if (isStar) {
-        icon = "⭐";
+        icon = "🪙"; // Změněno na ikonu coin / mince
     } else {
         if (currentLevel === 0) {
-            pool = ["⚽", "👩", "👵", "🍺", "🍔"];
+            pool = ["⚽", "👩🏼", "👵🏼", "🍺", "🍔", "🍻", "🍸", "☕", "🥤", "🍭", "🧁", "👩🏼‍🦳"];
         } else if (currentLevel === 1) {
-            pool = ["🍾", "🧾", "🍕", "🍟", "🍩"];
+            pool = ["🍾", "🧾", "🍕", "🍟", "🍩", "🍺", "🌭", "🎈", "🕺🏼", "💃🏼"];
         } else if (currentLevel === 2) {
-            pool = ["🎂", "🥂", "👵", "👩‍🦳"];
+            pool = ["🎂", "🥂", "👵🏼", "👩🏼‍🦳", "👩🏼‍❤️‍👨🏼", "👰🏼‍♀️", "🤵🏼", "🍾", "🍰", "💍"];
         } else {
-            pool = ["🍼", "👶", "🧷", "⚡", "⛈️"];
+            pool = ["🍼", "👶🏼", "🧷", "⚡", "🤰🏼", "👩🏼‍❤️‍👨🏼", "🥩", "💎"];
         }
         icon = pool[Math.floor(Math.random() * pool.length)];
     }
@@ -481,13 +542,21 @@ function spawnObstacle() {
     // Nastavení základní rychlosti podle zvolené obtížnosti
     let baseSpeed = 5.5;
     if (selectedDifficulty === "dite") { 
-        baseSpeed = 3.5; 
+        baseSpeed = 4.5; 
     }
-    if (selectedDifficulty === "nemozne") { 
-        baseSpeed = 9.5; 
+    if (selectedDifficulty === "nemozne" || (selectedDifficulty === "opilec" && currentLevel >= 3)) { 
+        baseSpeed = 10.5; 
     }
     
-    let currentSpeed = baseSpeed + (currentLevel * 0.5);
+    let currentSpeed = baseSpeed + (currentLevel * 0.5);// Extrémní zrychlení pro úroveň Nemožné od LEVELU 2 a výše
+    if (selectedDifficulty === "nemozne" && currentLevel >= 1) {
+        currentSpeed = 15.5;
+    }
+    
+    // Aplikace střídavé rychlosti pro opilce v LEVELU 3
+    if (selectedDifficulty === "opilec" && currentLevel === 2) {
+        currentSpeed = currentSpeed * drunkSpeedModifier;
+    }
     
     // Zrychlování v Levelu 5 začíná plynule od postupu do 5. levelu
     if (currentLevel === 4 && score > LEVELS[3].target) {
@@ -519,15 +588,14 @@ function startNewGame() {
     // Schováme menu s tlačítky, když se aktivně hraje
     document.getElementById("difficultyMenu").style.display = "none";
     
-    // ZASTAVÍME A RESETUJEME VŠECHNU HUDBU (Důležité pro restart hry po prohře)
-    bgMusic.pause();
-    bgMusic.currentTime = 0;
-    introMusic.pause();
+    // RESETUJEME SKLADBY NA ZAČÁTEK
     introMusic.currentTime = 0;
+    bgMusic.currentTime = 0;
     babySoundPlayed = false; // Resetuje hlídače pro nový pokus
     
-    // SPUSTÍME POUZE ÚVODNÍ PÍSNIČKU
-    introMusic.play().catch(function(error) { console.log("Intro čeká na interakci"); });
+    // SPUSTÍME INTRO I HLAVNÍ HUDBU SOUČASNĚ OD STARTU
+    introMusic.play().catch(function(error) { console.log("Intro čeká na kliknutí"); });
+    bgMusic.play().catch(function(error) { console.log("Hlavní hudba čeká na kliknutí"); });
     
     obstacles = [];
     score = 0;
@@ -549,6 +617,11 @@ function startNewGame() {
     mimino.y = 335;
     mimino.velocity = 0;
     mimino.isJumping = false;
+
+    // Reset nové postavy holčičky pro nový pokus
+    holcicka.y = 320;
+    holcicka.velocity = 0;
+    holcicka.isJumping = false;
     
     gameOver = false;
     gameWon = false;
@@ -577,8 +650,10 @@ function gameLoop() {
         gradient.addColorStop(0, "#bae6fd");
         gradient.addColorStop(1, "#e0f2fe");
         ctx.fillStyle = gradient;
-    } else if (currentLevel === 1) {
-        hue = (hue + 0.5) % 360;
+    } else if (currentLevel === 1 || (selectedDifficulty === "opilec" && currentLevel >= 3)) {
+        // Pokud je to opilec v lvl 4+, přičítá se hue obrovskou rychlostí (např. +15 místo +0.5)
+        let speedIncrease = (selectedDifficulty === "opilec" && currentLevel >= 3) ? 15 : 0.5;
+        hue = (hue + speedIncrease) % 360;
         ctx.fillStyle = "hsla(" + hue + ", 70%, 80%, 1)";
     } else if (currentLevel === 2) {
         let gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -600,11 +675,19 @@ function gameLoop() {
     // Aktualizace a zobrazení postav podle levelu (Zarovnaný těsný zástup)
     if (currentLevel === 0) {
         milanek.x = 80;
-        stela.x = 140;
         milanek.update();
         milanek.draw();
-        stela.update();
-        stela.draw();
+        
+        // Pokud je skóre nad 100, Stela zmizí a místo ní běží holčička
+        if (score > 100) {
+            holcicka.x = 140;
+            holcicka.update();
+            holcicka.draw();
+        } else {
+            stela.x = 140;
+            stela.update();
+            stela.draw();
+        }
     } else if (currentLevel === 1) {
         milanek.x = 40;
         verca.x = 350;
@@ -622,30 +705,43 @@ function gameLoop() {
     } else if (currentLevel === 3 || currentLevel === 4) {
         milanek.x = 40;
         verca.x = 80;
-        stela.x = 120;
         
         milanek.update();
         milanek.draw();
         verca.update();
         verca.draw();
-        stela.update();
-        stela.draw();
         
-        // Zobrazení miminka na scéně dynamicky podle obtížnosti (nad babyTargetScore)
+        // Pokud je skóre nad 100, Stela zmizí a místo ní běží holčička
+        if (score > 100) {
+            holcicka.x = 120;
+            holcicka.update();
+            holcicka.draw();
+        } else {
+            stela.x = 120;
+            stela.update();
+            stela.draw();
+        }
+        
+        // Přehrání zvuku při dosažení babyTargetScore pro všechny úrovně
+        if (score > babyTargetScore) {
+            if (!mimino.soundPlayed) {
+                if (typeof uwuSound !== "undefined") {
+                    uwuSound.currentTime = 0;
+                    uwuSound.play().catch(function(e) { console.log(e); });
+                }
+                mimino.soundPlayed = true;
+            }
+        }
+
+        // Zobrazení miminka na scéně v Levelu 5
         if (currentLevel === 4 && score > babyTargetScore) {
             mimino.x = 150;
             mimino.update();
             mimino.draw();
-        if (!mimino.soundPlayed) {
-                if (typeof uwuSound !== "undefined") {
-                    uwuSound.play().catch(function(e) { console.log(e); });
-                }
-                mimino.soundPlayed = true; // Označíme přímo na objektu miminka, že zvuk hrál
-            }
         }
     }
 
-    // Barevný progress bar na dně plátna
+
     if (LEVELS[currentLevel].target !== Infinity) {
         let progressRatio = score / LEVELS[currentLevel].target;
         ctx.fillStyle = "rgba(214, 51, 132, 0.3)";
@@ -661,7 +757,22 @@ function gameLoop() {
 // ============================================================================
     // 🎮 HLAVNÍ HERNÍ SMYČKA (2. ČÁST - LOGIKA S MIMINKEM)
     // ============================================================================
-    if (gameActive === true && gameOver === false && gameWon === false) {
+    if (gameActive === true && gameOver === false && gameWon === false) {// Dynamické změny fyziky pro obtížnost OPILEC podle levelů
+        if (selectedDifficulty === "opilec") {
+            if (currentLevel === 1) { 
+                // LEVEL 2: Normální gravitace a skok jako u dospělého
+                milanek.gravity = verca.gravity = stela.gravity = mimino.gravity = 0.6;
+                milanek.lift = verca.lift = stela.lift = mimino.lift = -12;
+            } else if (currentLevel === 2) { 
+                // LEVEL 3: Návrat k plachtění z LEVEL 1
+                milanek.gravity = verca.gravity = stela.gravity = mimino.gravity = 0.2;
+                milanek.lift = verca.lift = stela.lift = mimino.lift = -12;
+            } else if (currentLevel >= 3) { 
+                // LEVEL 4 a 5: Normální skok (běžná výška a gravitace)
+                milanek.gravity = verca.gravity = stela.gravity = mimino.gravity = 0.6;
+                milanek.lift = verca.lift = stela.lift = mimino.lift = -12;
+            }
+        }
         spawnTimer = spawnTimer + 1;
         if (spawnTimer > 90) {
             spawnObstacle();
@@ -677,11 +788,20 @@ function gameLoop() {
             ctx.textAlign = "center";
             ctx.fillText(obs.label, obs.x + 15, obs.y + 25);
             
-            // Kontrola kolizí pro jednotlivé postavy
+            // Kontrola kolizí pro jednotlivé postavy (s podporou pro holčičku)
             let hitGroom = checkCollision(milanek, obs);
             let hitBride = (currentLevel > 0) && checkCollision(verca, obs);
-            let hitCat = (currentLevel === 0 || currentLevel > 2) && checkCollision(stela, obs);
             let hitBaby = (currentLevel === 4 && score > babyTargetScore) && checkCollision(mimino, obs);
+            
+            let hitCat = false;
+            if (currentLevel === 0 || currentLevel > 2) {
+                // Pokud je skóre nad 100, kontrolujeme náraz do holčičky, jinak do Stely
+                if (score > 100) {
+                    hitCat = checkCollision(holcicka, obs);
+                } else {
+                    hitCat = checkCollision(stela, obs);
+                }
+            }
             
             if (hitGroom === true || hitBride === true || hitCat === true || hitBaby === true) {
                 if (obs.isStar === true) {
@@ -799,19 +919,25 @@ function gameLoop() {
             }
         }
         
-        ctx.fillStyle = "#ff4d4d";
-        ctx.font = "bold 36px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("Svatba v ohrozeni! 💥", canvas.width / 2, canvas.height / 2 - 60);
+
+        // Nový vycentrovaný podtitulek
+        ctx.fillStyle = "#f472b6";
+        ctx.font = "italic bold 20px Arial";
+        ctx.fillText("Žili spolu šťastně i po smrti... 🕊️❤️", canvas.width / 2, canvas.height / 2 - 35);
+        
+        // Statistiky a výsledky
         ctx.fillStyle = "white";
         ctx.font = "18px Arial";
-        ctx.fillText("Tvůj výsledek: " + score + " bodů (Pokus: " + attempts + ")", canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillText("Tvůj výsledek: " + score + " bodů (Pokus: " + attempts + ")", canvas.width / 2, canvas.height / 2 + 15);
+        
         ctx.fillStyle = "#fef08a";
         ctx.font = "bold 18px Arial";
-        ctx.fillText("🏆 REKORD: " + highScoreName + " (" + highScore + " bodů)", canvas.width / 2, canvas.height / 2 + 30);
+        ctx.fillText("🏆 REKORD: " + highScoreName + " (" + highScore + " bodů)", canvas.width / 2, canvas.height / 2 + 50);
+        
         ctx.fillStyle = "#e0f2fe";
         ctx.font = "14px Arial";
-        ctx.fillText("Zvol obtížnost níže pro nový pokus", canvas.width / 2, canvas.height / 2 + 80);
+        ctx.fillText("Zvol obtížnost níže pro nový pokus", canvas.width / 2, canvas.height / 2 + 95);
         
         // Zobrazení menu při prohře
         document.getElementById("difficultyMenu").style.display = "flex";
@@ -830,6 +956,15 @@ function handleAction() {
             // Pokud hrajeme za opilce, pustí se speciální zvuk
             jumpDrunkSound.currentTime = 0;
             jumpDrunkSound.play().catch(function(e){});
+            
+            // Počítání skoků v LEVELU 3 pro změnu rychlosti
+            if (currentLevel === 2) {
+                drunkJumpCount++;
+                if (drunkJumpCount % 2 === 0) {
+                    // Každý druhý skok střídá rychlost 50% dolů (0.5) a 50% nahoru (1.5)
+                    drunkSpeedModifier = (drunkSpeedModifier === 0.5) ? 1.5 : 0.5;
+                }
+            }
         } else {
             // Pro všechny ostatní obtížnosti hraje klasický skok
             jumpSound.currentTime = 0;
@@ -853,18 +988,28 @@ function handleAction() {
             verca.jump();
             setTimeout(function() { milanek.jump(); }, 120);
         } else if (currentLevel === 3 || currentLevel === 4) {
-            // Skákání zprava do leva podle toho, jak postavy potkávají překážku
-            if (currentLevel === 4 && score > babyTargetScore) {
-                // LEVEL 5 S MIMINKEM: Vlna jde zprava doleva: Mimino -> Stela -> Verča -> Milánek
-                mimino.jump();
-                setTimeout(function() { stela.jump(); }, 120);
-                setTimeout(function() { verca.jump(); }, 240);
-                setTimeout(function() { milanek.jump(); }, 360);
+            // SPECIÁLNÍ ÚPRAVA PRO NEMOŽNÉ: Nad 60 bodů skáčou všichni naráz (žádná vlna)
+            if (selectedDifficulty === "nemozne" && score >= 60) {
+                milanek.jump();
+                verca.jump();
+                if (score > 100) { holcicka.jump(); } else { stela.jump(); }
+                if (currentLevel === 4 && score > babyTargetScore) {
+                    mimino.jump();
+                }
             } else {
-                // LEVEL 4 S KOČKOU: Vlna jde zprava doleva: Stela -> Verča -> Milánek
-                stela.jump();
-                setTimeout(function() { verca.jump(); }, 120);
-                setTimeout(function() { milanek.jump(); }, 240);
+                // Klasické skákání ve vlně zprava doleva
+                if (currentLevel === 4 && score > babyTargetScore) {
+                    mimino.jump();
+                    setTimeout(function() { 
+                        if (score > 100) { holcicka.jump(); } else { stela.jump(); } 
+                    }, 120);
+                    setTimeout(function() { verca.jump(); }, 240);
+                    setTimeout(function() { milanek.jump(); }, 360);
+                } else {
+                    if (score > 100) { holcicka.jump(); } else { stela.jump(); }
+                    setTimeout(function() { verca.jump(); }, 120);
+                    setTimeout(function() { milanek.jump(); }, 240);
+                }
             }
         }
     }
