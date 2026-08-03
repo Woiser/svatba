@@ -120,32 +120,33 @@ let selectedDifficulty = "dospely";
 // 🎵 AUDIO OBJEKTY (HUDBA A ZVUKY)
 // ============================================================================
 const introMusic = new Audio("intro.mp3");
-introMusic.volume = 1.0; // 🚀 OPRAVENO: Intro nastaveno na maximální hlasitost (100 %)
+introMusic.volume = 1.0; // Intro hraje na 100 % hlasitost
 
 const bgMusic = new Audio("hudba.mp3");
 bgMusic.loop = true; // Hlavní hudba pojede ve smyčce
-bgMusic.volume = 0.4; // Hlasitost zůstává na tvém nastavení
+bgMusic.volume = 0.4; // Hudba hraje na pozadí na 40 % hlasitost
 
 const starSound = new Audio("hvezda.mp3");
-starSound.volume = 0.6; // Hlasitost cinknutí hvězdy
+starSound.volume = 0.6;
 
 const gameOverSound = new Audio("konec.mp3");
 gameOverSound.volume = 0.5;
 
 const uwuSound = new Audio("uwu.mp3");
-uwuSound.volume = 1.0; // Nastaveno na maximální hlasitost (100 %)
+uwuSound.volume = 1.0;
 
 const jumpSound = new Audio("skok.mp3");
-jumpSound.volume = 0.3; // Hlasitost pro klasický skok
+jumpSound.volume = 0.3;
 
 const jumpDrunkSound = new Audio("skokopilec.mp3");
-jumpDrunkSound.volume = 0.4; // Hlasitost pro opilecký skok
+jumpDrunkSound.volume = 0.4;
 
 // Hlídač, aby UWU zvuk nezazněl v Levelu 5 víckrát než jednou za hru
 let babySoundPlayed = false;
 
-// 🚀 OPRAVENO: Smazán celý blok introMusic.addEventListener("ended"), 
-// protože hudba už běží hned od startu spolu s intrem a nespustí se podruhé.
+// 🔥 OPRAVENO: Tento blok byl kompletně smazán:
+// introMusic.addEventListener("ended", function() { ... });
+// Už zde nic neresetuje hudbu po skončení intra!
 
 let babyTargetScore = 65; // Dynamicky upraveno později
 // ============================================================================
