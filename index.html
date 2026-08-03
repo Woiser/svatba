@@ -268,7 +268,7 @@ const milanek = {
         
         // 📸 FOTKA MÍSTO HLAVY (vykreslí se, jen když je fotka úspěšně načtená z GitHubu)
         if (milanLoaded) {
-            ctx.drawImage(milanHlava, this.x + 5, this.y, 25, 25);
+            ctx.drawImage(milanHlava, this.x + 2.5, this.y - 10, 30, 30);
         } else {
             // Záložní kreslená hlava, kdyby GitHub měl zrovna výpadek
             ctx.fillStyle = "#ffdbac";
@@ -330,7 +330,7 @@ const verca = {
         
         // 📸 FOTKA MÍSTO HLAVY (vykreslí se, jen když je fotka úspěšně načtená z GitHubu)
         if (vercaLoaded) {
-            ctx.drawImage(vercaHlava, this.x + 7.5, this.y, 25, 25);
+            ctx.drawImage(vercaHlava, this.x + 5, this.y - 10, 30, 30);
         } else {
             // Záložní kreslená hlava pro případ výpadku
             ctx.fillStyle = "#ffdbac";
