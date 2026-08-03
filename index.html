@@ -92,11 +92,11 @@ const ctx = canvas.getContext("2d");
 
 // DEFINICE LEVELŮ S DOČASNÝMI LIMITI (PŘENASTAVÍ SE PODLE OBTÍŽNOSTI)
 const LEVELS = [
-    { name: "LEVEL 1: Milanek bezi zivotem 🐱", target: 10 },
-    { name: "LEVEL 2: Milanek na rozlucce se svobodou 🍻", target: 25 }, 
-    { name: "LEVEL 3: Beh k oltari 💒", target: 35 }, 
-    { name: "LEVEL 4: Beh zivotem 🍼🏡🐱", target: 45 },
-    { name: "LEVEL 5: Nekonecne manzelstvi! ♾️❤️", target: Infinity }
+    { name: "LEVEL 1: Milánek běží životem 🐱", target: 10 },
+    { name: "LEVEL 2: Milánek na rozlučce se svobodou 🍻", target: 25 }, 
+    { name: "LEVEL 3: Běh k oltáři 💒", target: 35 }, 
+    { name: "LEVEL 4: Běh životem 🍼🏡🐱", target: 45 },
+    { name: "LEVEL 5: Nekonečné manželství! ♾️❤️", target: Infinity }
 ];
 
 // STAVOVÉ PROMĚNNÉ PRO CHOD ENGNEU
@@ -141,6 +141,12 @@ jumpSound.volume = 0.3;
 const jumpDrunkSound = new Audio("skokopilec.mp3");
 jumpDrunkSound.volume = 0.4;
 
+const milanHlava = new Image();
+milanHlava.src = "Milan.jpeg";
+
+const vercaHlava = new Image();
+vercaHlava.src = "Verca.jpeg";
+
 // Hlídač, aby UWU zvuk nezazněl v Levelu 5 víckrát než jednou za hru
 let babySoundPlayed = false;
 
@@ -158,7 +164,7 @@ function setDifficulty(type) {
     // 1. Nastavení gravitace (pro opilce slabší plachtění a pomalejší dopad)
     let g = 0.6;
     if (type === "opilec") { 
-        g = 0.2; // Extra pomalé plachtění pro LEVEL 1
+        g = 0.4; // Extra pomalé plachtění pro LEVEL 1
     }
     milanek.gravity = g;
     verca.gravity = g;
@@ -227,41 +233,34 @@ const milanek = {
     },
     
     draw() {
-        ctx.save();
-        // Hlava
-        ctx.fillStyle = "#ffdbac";
-        ctx.beginPath();
-        ctx.arc(this.x + 17.5, this.y + 10, 10, 0, Math.PI * 2);
-        ctx.fill();
-        // Vlasy
-        ctx.fillStyle = "#4a3728";
-        ctx.beginPath();
-        ctx.arc(this.x + 17.5, this.y + 7, 10, Math.PI, 0);
-        ctx.fill();
-        // Sako
-        ctx.fillStyle = "#1e293b";
-        ctx.fillRect(this.x + 4, this.y + 20, 27, 28);
-        // Košile (bílý výstřih)
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.moveTo(this.x + 13.5, this.y + 20);
-        ctx.lineTo(this.x + 21.5, this.y + 20);
-        ctx.lineTo(this.x + 17.5, this.y + 28);
-        ctx.fill();
-        // Růžový motýlek
-        ctx.fillStyle = "#d63384";
-        ctx.beginPath();
-        ctx.moveTo(this.x + 13.5, this.y + 22);
-        ctx.lineTo(this.x + 21.5, this.y + 26);
-        ctx.lineTo(this.x + 21.5, this.y + 22);
-        ctx.lineTo(this.x + 13.5, this.y + 26);
-        ctx.fill();
-        // Kalhoty a boty
-        ctx.fillStyle = "#0f172a";
-        ctx.fillRect(this.x + 6, this.y + 48, 7, 12);
-        ctx.fillRect(this.x + 22, this.y + 48, 7, 12);
-        ctx.restore();
-    }
+    ctx.save();
+    // 📸 NOVÉ: Fotka z GitHubu přesně na místo hlavy (nahrazuje starou hlavu a vlasy)
+    ctx.drawImage(milanHlava, this.x + 5, this.y, 25, 25);
+
+    // Sako
+    ctx.fillStyle = "#1e293b";
+    ctx.fillRect(this.x + 4, this.y + 20, 27, 28);
+    // Košile (bílý výstřih)
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(this.x + 13.5, this.y + 20);
+    ctx.lineTo(this.x + 21.5, this.y + 20);
+    ctx.lineTo(this.x + 17.5, this.y + 28);
+    ctx.fill();
+    // Růžový motýlek
+    ctx.fillStyle = "#d63384";
+    ctx.beginPath();
+    ctx.moveTo(this.x + 13.5, this.y + 22);
+    ctx.lineTo(this.x + 21.5, this.y + 26);
+    ctx.lineTo(this.x + 21.5, this.y + 22);
+    ctx.lineTo(this.x + 13.5, this.y + 26);
+    ctx.fill();
+    // Kalhoty a boty
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(this.x + 6, this.y + 48, 7, 12);
+    ctx.fillRect(this.x + 22, this.y + 48, 7, 12);
+    ctx.restore();
+}
 };
 
 // ============================================================================
@@ -298,38 +297,23 @@ const verca = {
     },
     
     draw() {
-        ctx.save();
-        // Závoj v pozadí
-        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        ctx.fillRect(this.x - 2, this.y + 12, 10, 35);
-        // Hlava
-        ctx.fillStyle = "#ffdbac";
-        ctx.beginPath();
-        ctx.arc(this.x + 17.5, this.y + 10, 10, 0, Math.PI * 2);
-        ctx.fill();
-        // Vlasy
-        ctx.fillStyle = "#f59e0b";
-        ctx.beginPath();
-        ctx.arc(this.x + 17.5, this.y + 8, 11, Math.PI * 1.1, Math.PI * 1.9);
-        ctx.fill();
-        // Svatební šaty (sukně)
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.moveTo(this.x + 6, this.y + 20);
-        ctx.lineTo(this.x + 29, this.y + 20);
-        ctx.lineTo(this.x + 35, this.y + 55);
-        ctx.lineTo(this.x, this.y + 55);
-        ctx.closePath();
-        ctx.fill();
-        // Růžový pásek
-        ctx.fillStyle = "#f472b6";
-        ctx.fillRect(this.x + 5, this.y + 30, 25, 4);
-        // Střevíčky
-        ctx.fillStyle = "#fce7f3";
-        ctx.fillRect(this.x + 8, this.y + 55, 6, 5);
-        ctx.fillRect(this.x + 21, this.y + 55, 6, 5);
-        ctx.restore();
-    }
+    ctx.save();
+    // Svatební šaty zůstávají
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(this.x + 10, this.y + 20);
+    ctx.lineTo(this.x + 30, this.y + 20);
+    ctx.lineTo(this.x + 40, this.y + 60);
+    ctx.lineTo(this.x, this.y + 60);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#f472b6";
+    ctx.fillRect(this.x + 8, this.y + 30, 24, 4);
+    
+    // 🔥 NOVÉ: Fotka přesně na místo hlavy
+    ctx.drawImage(vercaHlava, this.x + 7.5, this.y, 25, 25);
+    ctx.restore();
+}
 };
 
 // ============================================================================
