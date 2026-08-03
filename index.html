@@ -142,10 +142,10 @@ const jumpDrunkSound = new Audio("skokopilec.mp3");
 jumpDrunkSound.volume = 0.4;
 
 const milanHlava = new Image();
-milanHlava.src = "Milan.jpeg";
+milanHlava.src = "Milan.png";
 
 const vercaHlava = new Image();
-vercaHlava.src = "Verca.jpeg";
+vercaHlava.src = "Verca.png";
 
 // Hlídač, aby UWU zvuk nezazněl v Levelu 5 víckrát než jednou za hru
 let babySoundPlayed = false;
@@ -234,7 +234,8 @@ const milanek = {
     
     draw() {
     ctx.save();
-    // 📸 NOVÉ: Fotka z GitHubu přesně na místo hlavy (nahrazuje starou hlavu a vlasy)
+    
+    // 📸 FOTKA MÍSTO HLAVY
     ctx.drawImage(milanHlava, this.x + 5, this.y, 25, 25);
 
     // Sako
@@ -298,7 +299,11 @@ const verca = {
     
     draw() {
     ctx.save();
-    // Svatební šaty zůstávají
+    
+    // 📸 FOTKA MÍSTO HLAVY
+    ctx.drawImage(vercaHlava, this.x + 7.5, this.y, 25, 25);
+
+    // Svatební šaty (překrásný zářivě bílý trojúhelník)
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.moveTo(this.x + 10, this.y + 20);
@@ -307,11 +312,9 @@ const verca = {
     ctx.lineTo(this.x, this.y + 60);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "#f472b6";
+    // Růžový pásek na šatech
+    ctx.fillStyle = "#d63384";
     ctx.fillRect(this.x + 8, this.y + 30, 24, 4);
-    
-    // 🔥 NOVÉ: Fotka přesně na místo hlavy
-    ctx.drawImage(vercaHlava, this.x + 7.5, this.y, 25, 25);
     ctx.restore();
 }
 };
