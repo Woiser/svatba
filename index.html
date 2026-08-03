@@ -141,11 +141,19 @@ jumpSound.volume = 0.3;
 const jumpDrunkSound = new Audio("skokopilec.mp3");
 jumpDrunkSound.volume = 0.4;
 
+// ============================================================================
+// 📸 OBRÁZKY (HLAVY Z GITHUB REPOZITÁŘE S KONTROLOU NAČTENÍ)
+// ============================================================================
+let milanLoaded = false;
+let vercaLoaded = false;
+
 const milanHlava = new Image();
-milanHlava.src = "Milan.png";
+milanHlava.onload = function() { milanLoaded = true; };
+milanHlava.src = "Milan.png"; // Ujisti se, že na GitHubu je přesně velký název Milan.png
 
 const vercaHlava = new Image();
-vercaHlava.src = "Verca.png";
+vercaHlava.src = "Verca.png"; // Ujisti se, že na GitHubu je přesně velký název Verca.png
+vercaHlava.onload = function() { vercaLoaded = true; };
 
 // Hlídač, aby UWU zvuk nezazněl v Levelu 5 víckrát než jednou za hru
 let babySoundPlayed = false;
@@ -196,8 +204,9 @@ function setDifficulty(type) {
     // Miminko vyběhne vždy přesně o 20 bodů později, než končí LEVEL 4
     babyTargetScore = LEVELS[3].target + 20;
     
-    // Po kliknutí na tlačítko obtížnosti rovnou spouštíme hru od začátku
-    handleAction();
+    // 🚀 OPRAVENO: Voláme rovnou startNewGame() namísto handleAction()
+    // To zabrání tomu, aby hra hned po kliknutí spadla do modré smrti
+    startNewGame();
 }
 // ============================================================================
 // 🤵 OBJEKT ŽENICHA: MILÁNEK
@@ -233,44 +242,51 @@ const milanek = {
     },
     
     draw() {
-    ctx.save();
-    
-    // 📸 FOTKA MÍSTO HLAVY
-    ctx.drawImage(milanHlava, this.x + 5, this.y, 25, 25);
-
-    // Sako
-    ctx.fillStyle = "#1e293b";
-    ctx.fillRect(this.x + 4, this.y + 20, 27, 28);
-    // Košile (bílý výstřih)
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.moveTo(this.x + 13.5, this.y + 20);
-    ctx.lineTo(this.x + 21.5, this.y + 20);
-    ctx.lineTo(this.x + 17.5, this.y + 28);
-    ctx.fill();
-    // Růžový motýlek
-    ctx.fillStyle = "#d63384";
-    ctx.beginPath();
-    ctx.moveTo(this.x + 13.5, this.y + 22);
-    ctx.lineTo(this.x + 21.5, this.y + 26);
-    ctx.lineTo(this.x + 21.5, this.y + 22);
-    ctx.lineTo(this.x + 13.5, this.y + 26);
-    ctx.fill();
-    // Kalhoty a boty
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(this.x + 6, this.y + 48, 7, 12);
-    ctx.fillRect(this.x + 22, this.y + 48, 7, 12);
-    ctx.restore();
-}
+        ctx.save();
+        // Sako
+        ctx.fillStyle = "#1e293b";
+        ctx.fillRect(this.x + 4, this.y + 20, 27, 28);
+        // Košile (bílý výstřih)
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(this.x + 13.5, this.y + 20);
+        ctx.lineTo(this.x + 21.5, this.y + 20);
+        ctx.lineTo(this.x + 17.5, this.y + 28);
+        ctx.fill();
+        // Růžový motýlek
+        ctx.fillStyle = "#d63384";
+        ctx.beginPath();
+        ctx.moveTo(this.x + 13.5, this.y + 22);
+        ctx.lineTo(this.x + 21.5, this.y + 26);
+        ctx.lineTo(this.x + 21.5, this.y + 22);
+        ctx.lineTo(this.x + 13.5, this.y + 26);
+        ctx.fill();
+        // Kalhoty a boty
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(this.x + 6, this.y + 48, 7, 12);
+        ctx.fillRect(this.x + 22, this.y + 48, 7, 12);
+        
+        // 📸 FOTKA MÍSTO HLAVY (vykreslí se, jen když je fotka úspěšně načtená z GitHubu)
+        if (milanLoaded) {
+            ctx.drawImage(milanHlava, this.x + 5, this.y, 25, 25);
+        } else {
+            // Záložní kreslená hlava, kdyby GitHub měl zrovna výpadek
+            ctx.fillStyle = "#ffdbac";
+            ctx.beginPath();
+            ctx.arc(this.x + 17.5, this.y + 10, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
 };
 
 // ============================================================================
 // 👰 OBJEKT NEVĚSTY: VERČA
 // ============================================================================
 const verca = {
-    x: 80,
+    x: 100,
     y: 300,
-    width: 35,
+    width: 40,
     height: 60,
     velocity: 0,
     gravity: 0.6,
@@ -298,27 +314,33 @@ const verca = {
     },
     
     draw() {
-    ctx.save();
-    
-    // 📸 FOTKA MÍSTO HLAVY
-    ctx.drawImage(vercaHlava, this.x + 7.5, this.y, 25, 25);
-
-    // Svatební šaty (překrásný zářivě bílý trojúhelník)
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.moveTo(this.x + 10, this.y + 20);
-    ctx.lineTo(this.x + 30, this.y + 20);
-    ctx.lineTo(this.x + 40, this.y + 60);
-    ctx.lineTo(this.x, this.y + 60);
-    ctx.closePath();
-    ctx.fill();
-    // Růžový pásek na šatech
-    ctx.fillStyle = "#d63384";
-    ctx.fillRect(this.x + 8, this.y + 30, 24, 4);
-    ctx.restore();
-}
+        ctx.save();
+        // Svatební šaty (překrásný zářivě bílý trojúhelník)
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(this.x + 10, this.y + 20);
+        ctx.lineTo(this.x + 30, this.y + 20);
+        ctx.lineTo(this.x + 40, this.y + 60);
+        ctx.lineTo(this.x, this.y + 60);
+        ctx.closePath();
+        ctx.fill();
+        // Růžový pásek na šatech
+        ctx.fillStyle = "#d63384";
+        ctx.fillRect(this.x + 8, this.y + 30, 24, 4);
+        
+        // 📸 FOTKA MÍSTO HLAVY (vykreslí se, jen když je fotka úspěšně načtená z GitHubu)
+        if (vercaLoaded) {
+            ctx.drawImage(vercaHlava, this.x + 7.5, this.y, 25, 25);
+        } else {
+            // Záložní kreslená hlava pro případ výpadku
+            ctx.fillStyle = "#ffdbac";
+            ctx.beginPath();
+            ctx.arc(this.x + 20, this.y + 10, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
 };
-
 // ============================================================================
 // 🐱 OBJEKT KOČKY: STELA
 // ============================================================================
@@ -933,69 +955,65 @@ function gameLoop() {
 }
 
 // ============================================================================
-// 🕹️ MECHANIKA OVLÁDÁNÍ SKOKŮ PODLE ZÁSTUPU V LEVELECH
+// 🕹️ MECHANIKA OVLÁDÁNÍ SKOKŮ
 // ============================================================================
 function handleAction() {
-    // 🎵 PŘEHRÁNÍ DYNAMICKÉHO ZVUKU SKOKU (Spustí se hned při kliknutí/mezerníku)
-    if (gameActive === true && gameOver === false && gameWon === false) {
-        if (selectedDifficulty === "opilec") {
-            // Pokud hrajeme za opilce, pustí se speciální zvuk
-            jumpDrunkSound.currentTime = 0;
-            jumpDrunkSound.play().catch(function(e){});
-            
-            // Počítání skoků v LEVELU 3 pro změnu rychlosti
-            if (currentLevel === 2) {
-                drunkJumpCount++;
-                if (drunkJumpCount % 2 === 0) {
-                    // Každý druhý skok střídá rychlost 50% dolů (0.5) a 50% nahoru (1.5)
-                    drunkSpeedModifier = (drunkSpeedModifier === 0.5) ? 1.5 : 0.5;
-                }
-            }
-        } else {
-            // Pro všechny ostatní obtížnosti hraje klasický skok
-            jumpSound.currentTime = 0;
-            jumpSound.play().catch(function(e){});
-        }
-    }
-
+    // 🚀 POJISTKA: Pokud hra ještě neběží nebo zrovna skončila, jen ji odstartujeme a ihned skončíme (return)
+    // To zajistí, že se hudba a zvuky skoků nespustí v jedné milisekundě přes sebe
     if (gameActive === false || gameOver === true || gameWon === true) {
         if (gameOver === true) {
             attempts = attempts + 1;
         }
         startNewGame();
+        return; 
+    }
+
+    // 🎵 DYNAMICKÝ ZVUK SKOKU (Spustí se jen v aktivní hře)
+    if (selectedDifficulty === "opilec") {
+        jumpDrunkSound.currentTime = 0;
+        jumpDrunkSound.play().catch(function(e){});
+        
+        if (currentLevel === 2) {
+            drunkJumpCount++;
+            if (drunkJumpCount % 2 === 0) {
+                drunkSpeedModifier = (drunkSpeedModifier === 0.5) ? 1.5 : 0.5;
+            }
+        }
     } else {
-        if (currentLevel === 0) {
-            stela.jump();
-            setTimeout(function() { milanek.jump(); }, 120);
-        } else if (currentLevel === 1) {
+        jumpSound.currentTime = 0;
+        jumpSound.play().catch(function(e){});
+    }
+
+    // VLASTNÍ VLNA SKÁKÁNÍ POSTAV
+    if (currentLevel === 0) {
+        stela.jump();
+        setTimeout(function() { milanek.jump(); }, 120);
+    } else if (currentLevel === 1) {
+        milanek.jump();
+        verca.jump();
+    } else if (currentLevel === 2) {
+        verca.jump();
+        setTimeout(function() { milanek.jump(); }, 120);
+    } else if (currentLevel === 3 || currentLevel === 4) {
+        if (selectedDifficulty === "nemozne" && score >= 60) {
             milanek.jump();
             verca.jump();
-        } else if (currentLevel === 2) {
-            verca.jump();
-            setTimeout(function() { milanek.jump(); }, 120);
-        } else if (currentLevel === 3 || currentLevel === 4) {
-            // SPECIÁLNÍ ÚPRAVA PRO NEMOŽNÉ: Nad 60 bodů skáčou všichni naráz (žádná vlna)
-            if (selectedDifficulty === "nemozne" && score >= 60) {
-                milanek.jump();
-                verca.jump();
-                if (score > 100) { holcicka.jump(); } else { stela.jump(); }
-                if (currentLevel === 4 && score > babyTargetScore) {
-                    mimino.jump();
-                }
+            if (score > 100) { holcicka.jump(); } else { stela.jump(); }
+            if (currentLevel === 4 && score > babyTargetScore) {
+                mimino.jump();
+            }
+        } else {
+            if (currentLevel === 4 && score > babyTargetScore) {
+                mimino.jump();
+                setTimeout(function() { 
+                    if (score > 100) { holcicka.jump(); } else { stela.jump(); } 
+                }, 120);
+                setTimeout(function() { verca.jump(); }, 240);
+                setTimeout(function() { milanek.jump(); }, 360);
             } else {
-                // Klasické skákání ve vlně zprava doleva
-                if (currentLevel === 4 && score > babyTargetScore) {
-                    mimino.jump();
-                    setTimeout(function() { 
-                        if (score > 100) { holcicka.jump(); } else { stela.jump(); } 
-                    }, 120);
-                    setTimeout(function() { verca.jump(); }, 240);
-                    setTimeout(function() { milanek.jump(); }, 360);
-                } else {
-                    if (score > 100) { holcicka.jump(); } else { stela.jump(); }
-                    setTimeout(function() { verca.jump(); }, 120);
-                    setTimeout(function() { milanek.jump(); }, 240);
-                }
+                if (score > 100) { holcicka.jump(); } else { stela.jump(); }
+                setTimeout(function() { verca.jump(); }, 120);
+                setTimeout(function() { milanek.jump(); }, 240);
             }
         }
     }
