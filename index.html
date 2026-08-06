@@ -531,10 +531,10 @@ function spawnObstacle() {
     const isGround = Math.random() > 0.5;
     let icon = "⚽";
     let pool = [];
-    let isStar = Math.random() < 0.15; // 15% šance, že se místo překážky objeví hvězda ⭐
+    let isStar = Math.random() < 0.15; // 15% šance, že se místo překážky objeví hvězda 💰
     
     if (isStar) {
-        icon = "🪙"; // Změněno na ikonu coin / mince
+        icon = "💰"; // Změněno na ikonu coin / mince
     } else {
         if (currentLevel === 0) {
             pool = ["⚽", "👩🏼", "👵🏼", "🍺", "🍔", "🍻", "🍸", "☕", "🥤", "🍭", "🧁", "👩🏼‍🦳"];
