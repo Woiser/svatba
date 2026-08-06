@@ -158,6 +158,7 @@ vercaHlava.onload = function() { vercaLoaded = true; };
 // Hlídač, aby UWU zvuk nezazněl v Levelu 5 víckrát než jednou za hru
 let babySoundPlayed = false;
 
+
 // 🔥 OPRAVENO: Tento blok byl kompletně smazán:
 // introMusic.addEventListener("ended", function() { ... });
 // Už zde nic neresetuje hudbu po skončení intra!
@@ -600,6 +601,7 @@ function startNewGame() {
     introMusic.currentTime = 0;
     bgMusic.currentTime = 0;
     babySoundPlayed = false; // Resetuje hlídače pro nový pokus
+    mimino.soundPlayed = false; //
     
     // SPUSTÍME INTRO I HLAVNÍ HUDBU SOUČASNĚ OD STARTU (Přesně podle tvého plánu)
     introMusic.play().catch(function(error) { console.log("Intro čeká na kliknutí"); });
@@ -729,17 +731,8 @@ function gameLoop() {
             stela.update();
             stela.draw();
         }
-        
-        // Přehrání zvuku při dosažení babyTargetScore pro všechny úrovně
-        if (score > babyTargetScore) {
-            if (!mimino.soundPlayed) {
-                if (typeof uwuSound !== "undefined") {
-                    uwuSound.currentTime = 0;
-                    uwuSound.play().catch(function(e) { console.log(e); });
-                }
-                mimino.soundPlayed = true;
-            }
-        }
+
+        // 🔥 ODSUD BYL KÓD ZVUKU VYMAZÁN 🔥
 
         // Zobrazení miminka na scéně v Levelu 5
         if (currentLevel === 4 && score > babyTargetScore) {
@@ -749,7 +742,18 @@ function gameLoop() {
         }
     }
 
+    // 🚀 SEM VLOŽTE KÓD PRO ZVUK (Běží pro všechny úrovně a obtížnosti stejně):
+    if (score > babyTargetScore) {
+        if (!mimino.soundPlayed) {
+            if (typeof uwuSound !== "undefined") {
+                uwuSound.currentTime = 0;
+                uwuSound.play().catch(function(e) { console.log(e); });
+            }
+            mimino.soundPlayed = true;
+        }
+    }
 
+    // Vykreslení spodního ukazatele postupu v levelu
     if (LEVELS[currentLevel].target !== Infinity) {
         let progressRatio = score / LEVELS[currentLevel].target;
         ctx.fillStyle = "rgba(214, 51, 132, 0.3)";
