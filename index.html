@@ -76,7 +76,76 @@
 
     <h1>💍 Milanek &amp; Verca: Cesta k oltari 💍</h1>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
-    
+    <div id="formular-skore" style="
+    display: none;
+    text-align: center;
+    margin: 15px auto;
+    padding: 15px;
+    max-width: 500px;
+    font-family: Arial, sans-serif;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+">
+
+    <div style="font-size: 20px; font-weight: bold; color: #d63384; margin-bottom: 10px;">
+        🏆 Zapiš svůj výsledek do TOP 30
+    </div>
+
+    <input
+        type="text"
+        id="hrac-jmeno"
+        placeholder="Tvoje jméno"
+        maxlength="20"
+        style="
+            width: 90%;
+            max-width: 350px;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        "
+    >
+
+    <br>
+
+    <input
+        type="text"
+        id="hrac-vzkaz"
+        placeholder="Vzkaz novomanželům (max 30 znaků)"
+        maxlength="30"
+        style="
+            width: 90%;
+            max-width: 350px;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        "
+    >
+
+    <br>
+
+    <button
+        id="tlacitko-odeslat"
+        style="
+            padding: 12px 25px;
+            margin-top: 8px;
+            cursor: pointer;
+            background-color: #d63384;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 15px;
+        "
+    >
+        🏆 Zapsat do TOP 30
+    </button>
+
+</div>
     <div id="difficultyMenu" style="margin-top: 15px; display: flex; gap: 10px;">
         <button onclick="setDifficulty('dite')" style="background: #22c55e; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px;">👶 Dítě</button>
         <button onclick="setDifficulty('dospely')" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px;">👨 Dospělý</button>
@@ -595,7 +664,13 @@ function spawnObstacle() {
 // 🔄 RESETOVÁNÍ HRY (START NOVÉHO POKUSU)
 // ============================================================================
 function startNewGame() {
-    // Schováme menu s tlačítky, když se aktivně hraje
+
+    const formular = document.getElementById("formular-skore");
+
+    if (formular) {
+        formular.style.display = "none";
+    }
+
     document.getElementById("difficultyMenu").style.display = "none";
     
     // RESETUJEME SKLADBY NA ZAČÁTEK
@@ -902,9 +977,16 @@ function gameLoop() {
     }
     
     // GAME OVER SCREEN
-    if (gameOver === true) {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+if (gameOver === true) {
+
+    const formular = document.getElementById("formular-skore");
+
+    if (formular) {
+        formular.style.display = "block";
+    }
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
         ctx.textAlign = "center";
         ctx.fillStyle = "#f472b6";
@@ -919,9 +1001,14 @@ function gameLoop() {
         ctx.font = "bold 18px Arial";
         ctx.fillText("🏆 Výsledek: " + score + " bodů", canvas.width / 2, canvas.height / 2 + 50);
         
-        ctx.fillStyle = "#e0f2fe";
+        // FORMULÁŘ PRO GLOBÁLNÍ SKÓRE
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 16px Arial";
+        ctx.fillText("Zapiš svůj výsledek do svatební TOP 50:", canvas.width / 2, canvas.height / 2 + 90);
+
         ctx.font = "14px Arial";
-        ctx.fillText("Zvol obtížnost níže pro nový pokus", canvas.width / 2, canvas.height / 2 + 95);
+        ctx.fillStyle = "#212529";
+        ctx.fillText("Jméno a vzkaz vyplň dole pod hrou.", canvas.width / 2, canvas.height / 2 + 115);
         
         document.getElementById("difficultyMenu").style.display = "flex";
     }
@@ -1099,36 +1186,54 @@ gameLoop();
 
     // Akce po kliknutí na tlačítko "Uložit můj výsledek"
     document.getElementById("tlacitko-odeslat").addEventListener("click", async () => {
-        const jmeno = document.getElementById("hrac-jmeno").value.trim();
-        const vzkaz = document.getElementById("hrac-vzkaz").value.trim();
-        const body = score; // Správně provázáno na body ze hry
 
-        if (jmeno === "") {
-            alert("Prosím, zadej své jméno, ať víme, komu gratulovat!");
-            return;
-        }
+    const jmeno = document.getElementById("hrac-jmeno").value.trim();
+    const vzkaz = document.getElementById("hrac-vzkaz").value.trim();
 
-        document.getElementById("tlacitko-odeslat").innerText = "Odesílám do databáze...";
-        document.getElementById("tlacitko-odeslat").disabled = true;
+    if (jmeno === "") {
+        alert("Prosím, napiš své jméno!");
+        return;
+    }
 
-        try {
-            await db.collection("zebricek").add({
-                jmeno: jmeno,
-                skore: Number(body),
-                vzkaz: vzkaz.substring(0, 30),
-                datum: new Date()
-            });
+    const tlacitko = document.getElementById("tlacitko-odeslat");
 
-            alert("Tvůj výsledek i vzkaz byly úspěšně uloženy! Děkujeme.");
-            document.getElementById("formular-skore").innerHTML = "<p style='color: #2ed573; font-weight: bold; font-size: 18px;'>Tvoje skóre bylo zapsáno do svatební tabulky rekordů!</p>";
-            obnovitTabulku();
-        } catch (chyba) {
-            console.error("Chyba při ukládání:", chyba);
-            alert("Něco se pokazilo. Zkus to prosím znovu.");
-            document.getElementById("tlacitko-odeslat").innerText = "Uložit můj výsledek";
-            document.getElementById("tlacitko-odeslat").disabled = false;
-        }
-    });
+    tlacitko.innerText = "⏳ Ukládám...";
+    tlacitko.disabled = true;
+
+    try {
+
+        await db.collection("zebricek").add({
+            jmeno: jmeno.substring(0, 20),
+            skore: Number(score),
+            vzkaz: vzkaz.substring(0, 30),
+            datum: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert("🏆 Výsledek byl zapsán do svatební TOP 30!");
+
+        document.getElementById("formular-skore").innerHTML = `
+            <div style="
+                color: #2ed573;
+                font-weight: bold;
+                font-size: 18px;
+                padding: 10px;
+            ">
+                🏆 Výsledek zapsán do svatební TOP 30!
+            </div>
+        `;
+
+        obnovitTabulku();
+
+    } catch (chyba) {
+
+        console.error("Chyba při ukládání:", chyba);
+
+        alert("Nepodařilo se uložit výsledek. Zkus to prosím znovu.");
+
+        tlacitko.innerText = "🏆 Zapsat do TOP 30";
+        tlacitko.disabled = false;
+    }
+});
 </script>
 </body>
 </html>
