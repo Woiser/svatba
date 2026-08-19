@@ -1074,22 +1074,25 @@ gameLoop();
     <div id="obsah-zebricku">Načítám nejlepší výsledky ze svatby...</div>
 </div>
 
-<!-- ČISTÝ JAVASCRIPT PRO OVLÁDÁNÍ DATABÁZE -->
+<!-- 🌐 KLASICKÉ A SPOLEHLIVÉ STAŽENÍ FIREBASE PŘÍMO PŘED SPUŠTĚNÍM -->
+<script src="https://gstatic.com"></script>
+<script src="https://gstatic.com"></script>
+
 <script>
-    // Opravená kompletní konfigurace vašeho projektu svatba-ed782
+    // Kompletní konfigurace vašeho projektu svatba-ed782
     const firebaseConfig = {
       apiKey: "AIzaSyDn0V7WhLLIlp0l2tviG1EoYnrAX2dpkFU",
-      authDomain: "svatba-ed782.firebaseapp.com",
+      authDomain: "://firebaseapp.com",
       projectId: "svatba-ed782",
       storageBucket: "svatba-ed782.firebasestorage.app",
       messagingSenderId: "789305181707",
       appId: "1:789305181707:web:c83e960f07161e7d2ae90e"
     };
 
-    // Spuštění Firebase (teď už funguje, protože knihovny jsou načtené v horním <head>)
+    // Nastartování databáze (značky script výše ji úspěšně připravily)
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    console.log("Firebase úspěšně spuštěna bez chyb!");
+    console.log("Firebase úspěšně spuštěna klasickou cestou bez chyb!");
 
     // Funkce pro načtení tabulky z databáze Google
     async function obnovitTabulku() {
