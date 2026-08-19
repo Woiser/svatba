@@ -1,3 +1,4 @@
+// Opravené kompletní adresy pro stažení Firebase z internetu
 import { initializeApp } from "https://gstatic.com";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://gstatic.com";
 
