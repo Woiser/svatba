@@ -1066,58 +1066,77 @@ canvas.addEventListener("touchstart", function(e) {
 gameLoop();
 </script>
 
-<!-- 1. NEJPRVE NAČTEME FIREBASE, ABY O NÍ PROHLÍŽEČ VĚDĚL -->
+<!-- 1. NAČTENÍ FIREBASE SOUBORU -->
 <script type="module" src="firebase.js"></script>
 
 <!-- ============================================================================
      💌 FORMULÁŘ PRO ZÁPIS DO SVATEBNÍ KNIHY REKORDŮ (FIREBASE)
      ============================================================================ -->
-<div id="formular-skore" style="text-align: center; margin-top: 20px; font-family: sans-serif; color: white;">
-    <h3>Skvělý výsledek! Zapiš se do svatební knihy rekordů:</h3>
-    <input type="text" id="hrac-jmeno" placeholder="Tvoje jméno (např. Strýc Pepa)" maxlength="20" style="padding: 8px; margin: 5px; border-radius: 5px; border: none;"><br>
-    <input type="text" id="hrac-vzkaz" placeholder="Vzkaz novomanželům (max 30 znaků)" maxlength="30" style="padding: 8px; margin: 5px; width: 250px; border-radius: 5px; border: none;"><br>
+<div id="formular-skore" style="text-align: center; margin-top: 20px; font-family: sans-serif; color: black;">
+    <h3 style="margin-bottom: 5px;">Skvělý výsledek! Zapiš se do svatební knihy rekordů:</h3>
+    <input type="text" id="hrac-jmeno" placeholder="Tvoje jméno (např. Strýc Pepa)" maxlength="20" style="padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc;"><br>
+    <input type="text" id="hrac-vzkaz" placeholder="Vzkaz novomanželům (max 30 znaků)" maxlength="30" style="padding: 8px; margin: 5px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"><br>
     <button id="tlacitko-odeslat" style="padding: 10px 20px; margin-top: 10px; cursor: pointer; background-color: #ff4757; color: white; border: none; border-radius: 5px; font-weight: bold;">Uložit můj výsledek</button>
 </div>
 
 <!-- ============================================================================
      🏆 TABULKA NEJLEPŠÍCH VÝSLEDKŮ SE VZKAZY
      ============================================================================ -->
-<div id="svatebni-zebricek" style="max-width: 600px; margin: 30px auto; font-family: sans-serif; color: white; text-align: center; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px;">
-    <h2 style="color: #ffd700; margin-top: 0;">🏆 Svatební TOP 10 🏆</h2>
+<div id="svatebni-zebricek" style="max-width: 600px; margin: 30px auto; font-family: sans-serif; color: black; text-align: center; background: rgba(255, 255, 255, 0.4); padding: 20px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1);">
+    <h2 style="color: #d4af37; margin-top: 0; text-shadow: 1px 1px 1px rgba(0,0,0,0.2);">🏆 Svatební TOP 10 🏆</h2>
     <div id="obsah-zebricku">Načítám nejlepší výsledky ze svatby...</div>
 </div>
 
-<!-- 2. TEPRVE TEĎMÁME SKRIPT PRO OBSLUHU TLAČÍTKA -->
+<!-- 2. OBSLUŽNÝ SKRIPT SE ZÁMKEM -->
 <script type="module">
+    // Pomocná funkce pro vykreslení tabulky
     async function obnovitTabulku() {
         const tabulkaDiv = document.getElementById("obsah-zebricku");
+        
+        // ZÁMEK: Pokud se Firebase ještě stahuje, počkáme půl vteřiny a zkusíme to znovu
         if (typeof window.nactiNejlepsiSkore !== "function") {
-            setTimeout(obnovitTabulku, 1000);
+            setTimeout(obnovitTabulku, 500);
             return;
         }
-        const hraci = await window.nactiNejlepsiSkore();
-        if (hraci.length === 0) {
-            tabulkaDiv.innerHTML = "<p>Zatím nikdo nehrál. Buď první!</p>";
-            return;
+
+        try {
+            const hraci = await window.nactiNejlepsiSkore();
+            if (hraci.length === 0) {
+                tabulkaDiv.innerHTML = "<p>Zatím nikdo nehrál. Buď první!</p>";
+                return;
+            }
+
+            let html = "<table style='width: 100%; border-collapse: collapse; margin-top: 15px;'>";
+            html += "<tr style='border-bottom: 2px solid #d4af37; height: 35px;'><th>Místo</th><th>Jméno</th><th>Skóre</th><th>Vzkaz</th></tr>";
+
+            hraci.forEach((hrac, index) => {
+                html += `<tr style='border-bottom: 1px solid rgba(0,0,0,0.1); height: 40px;'>`;
+                html += `<td style='font-weight: bold;'>${index + 1}.</td>`;
+                html += `<td style='text-align: left; padding-left: 10px;'>${hrac.jmeno}</td>`;
+                html += `<td style='color: #ff4757; font-weight: bold;'>${hrac.skore} b.</td>`;
+                html += `<td style='font-style: italic; color: #333; text-align: left; padding-left: 10px;'>${hrac.vzkaz || ""}</td>`;
+                html += `</tr>`;
+            });
+
+            html += "</table>";
+            tabulkaDiv.innerHTML = html;
+        } catch (e) {
+            tabulkaDiv.innerHTML = "<p>Nepodařilo se načíst výsledky.</p>";
         }
-        let html = "<table style='width: 100%; border-collapse: collapse; margin-top: 15px;'>";
-        html += "<tr style='border-bottom: 2px solid #ffd700; height: 35px;'><th>Místo</th><th>Jméno</th><th>Skóre</th><th>Vzkaz novomanželům</th></tr>";
-        hraci.forEach((hrac, index) => {
-            html += `<tr style='border-bottom: 1px solid rgba(255,255,255,0.1); height: 40px;'>`;
-            html += `<td style='font-weight: bold;'>${index + 1}.</td>`;
-            html += `<td style='text-align: left; padding-left: 10px;'>${hrac.jmeno}</td>`;
-            html += `<td style='color: #ffd700; font-weight: bold;'>${hrac.skore} b.</td>`;
-            html += `<td style='font-style: italic; color: #ddd; text-align: left; padding-left: 10px;'>${hrac.vzkaz || ""}</td>`;
-            html += `</tr>`;
-        });
-        html += "</table>";
-        tabulkaDiv.innerHTML = html;
     }
 
+    // Spustíme bezpečné načítání tabulky
     obnovitTabulku();
     window.zobrazZebříčekNaWebu = obnovitTabulku;
 
+    // Kliknutí na tlačítko
     document.getElementById("tlacitko-odeslat").addEventListener("click", async () => {
+        // ZÁMEK: Pokud host klikne moc rychle a Firebase ještě neběží
+        if (typeof window.ulozSkore !== "function") {
+            alert("Hra se ještě propojuje s databází, vteřinku strpení a zkuste to znovu!");
+            return;
+        }
+
         const jmeno = document.getElementById("hrac-jmeno").value.trim();
         const vzkaz = document.getElementById("hrac-vzkaz").value.trim();
         const body = score; 
@@ -1135,9 +1154,7 @@ gameLoop();
         if (uspech) {
             alert("Tvůj výsledek i vzkaz byly úspěšně uloženy! Děkujeme.");
             document.getElementById("formular-skore").innerHTML = "<p style='color: #2ed573; font-weight: bold;'>Tvoje skóre bylo zapsáno do svatební tabulky rekordů!</p>";
-            if (typeof window.zobrazZebříčekNaWebu === "function") {
-                window.zobrazZebříčekNaWebu();
-            }
+            obnovitTabulku();
         } else {
             alert("Něco se pokazilo. Zkus to prosím znovu.");
             document.getElementById("tlacitko-odeslat").innerText = "Uložit můj výsledek";
