@@ -897,12 +897,7 @@ function gameLoop() {
         ctx.fillStyle = "#fbcfe8";
         ctx.fillText("Vyber obtížnost níže pro start hry", canvas.width / 2, canvas.height / 2 + 20);
         
-        let localRecord = localStorage.getItem("milanVercaHighScore") || 0;
-        let localName = localStorage.getItem("milanVercaHighScoreName") || "Nikdo";
-        if (localRecord > 0) {
-            ctx.fillStyle = "#fef08a";
-            ctx.fillText("🏆 REKORD PROHLÍŽEČE: " + localName + " (" + localRecord + " bodů)", canvas.width / 2, canvas.height / 2 + 60);
-        }
+        
         document.getElementById("difficultyMenu").style.display = "flex";
     }
     
@@ -910,24 +905,7 @@ function gameLoop() {
     if (gameOver === true) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // 💾 PERMANENTNÍ UKLÁDÁNÍ REKORDU DO PROHLÍŽEČE
-        let lastHighScore = localStorage.getItem("milanVercaHighScore") ? parseInt(localStorage.getItem("milanVercaHighScore")) : 0;
-        if (score > lastHighScore) {
-            localStorage.setItem("milanVercaHighScore", score);
-            let jm = prompt("🎉 NOVÝ REKORD! 🎉\nDosáhl jsi " + score + " bodů!\nNapiš své jméno:");
-            if (jm !== null && jm.trim() !== "") {
-                highScoreName = jm.trim();
-            } else {
-                highScoreName = "Anonym";
-            }
-            localStorage.setItem("milanVercaHighScoreName", highScoreName);
-            highScore = score;
-        } else {
-            highScore = lastHighScore;
-            highScoreName = localStorage.getItem("milanVercaHighScoreName") || "Hráč";
-        }
-        
+                
         ctx.textAlign = "center";
         ctx.fillStyle = "#f472b6";
         ctx.font = "italic bold 20px Arial";
@@ -939,7 +917,7 @@ function gameLoop() {
         
         ctx.fillStyle = "#fef08a";
         ctx.font = "bold 18px Arial";
-        ctx.fillText("🏆 REKORD: " + highScoreName + " (" + highScore + " bodů)", canvas.width / 2, canvas.height / 2 + 50);
+        ctx.fillText("🏆 Výsledek: " + score + " bodů", canvas.width / 2, canvas.height / 2 + 50);
         
         ctx.fillStyle = "#e0f2fe";
         ctx.font = "14px Arial";
@@ -1050,21 +1028,13 @@ canvas.addEventListener("touchstart", function(e) {
 gameLoop();
 </script>
 
-<!-- ============================================================================
-     💌 FORMULÁŘ PRO ZÁPIS DO SVATEBNÍ KNIHY REKORDŮ
-     ============================================================================ -->
-<div id="formular-skore" style="text-align: center; margin-top: 20px; font-family: sans-serif; color: black;">
-    <h3 style="margin-bottom: 5px;">Skvělý výsledek! Zapiš se do svatební knihy rekordů:</h3>
-    <input type="text" id="hrac-jmeno" placeholder="Tvoje jméno (např. Strýc Pepa)" maxlength="20" style="padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc;"><br>
-    <input type="text" id="hrac-vzkaz" placeholder="Vzkaz novomanželům (max 30 znaků)" maxlength="30" style="padding: 8px; margin: 5px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"><br>
-    <button id="tlacitko-odeslat" style="padding: 10px 20px; margin-top: 10px; cursor: pointer; background-color: #ff4757; color: white; border: none; border-radius: 5px; font-weight: bold;">Uložit můj výsledek</button>
-</div>
+
 
 <!-- ============================================================================
      🏆 TABULKA NEJLEPŠÍCH VÝSLEDKŮ SE VZKAZY
      ============================================================================ -->
 <div id="svatebni-zebricek" style="max-width: 600px; margin: 30px auto; font-family: sans-serif; color: black; text-align: center; background: rgba(255, 255, 255, 0.4); padding: 20px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1);">
-    <h2 style="color: #d4af37; margin-top: 0; text-shadow: 1px 1px 1px rgba(0,0,0,0.2);">🏆 Svatební TOP 10 🏆</h2>
+    <h2 style="color: #d4af37; margin-top: 0; text-shadow: 1px 1px 1px rgba(0,0,0,0.2);">🏆 Svatební TOP 30 🏆</h2>
     <div id="obsah-zebricku">Načítám nejlepší výsledky ze svatby...</div>
 </div>
 
