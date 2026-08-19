@@ -2,12 +2,6 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    
-    <!-- ============================================================================
-         🌐 BEZPEČNÉ NAČTENÍ FIREBASE (ABY NEVZNIKALA CHYBA NOT DEFINED)
-         ============================================================================ -->
-    <script src="https://cloudflare.com"></script>
-    <script src="https://cloudflare.com"></script>
 
     <title>Milanek a Verca: Cesta k oltari</title>
     <style>
@@ -1075,8 +1069,8 @@ gameLoop();
 </div>
 
 <!-- 🌐 KLASICKÉ A SPOLEHLIVÉ STAŽENÍ FIREBASE PŘÍMO PŘED SPUŠTĚNÍM -->
-<script src="https://gstatic.com"></script>
-<script src="https://gstatic.com"></script>
+<script src="https://www.gstatic.com/firebasejs/12.17.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore-compat.js"></script>
 
 <script>
     // Kompletní konfigurace vašeho projektu svatba-ed782
@@ -1092,6 +1086,7 @@ gameLoop();
     // Nastartování databáze (značky script výše ji úspěšně připravily)
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
     console.log("Firebase úspěšně spuštěna klasickou cestou bez chyb!");
 
     // Funkce pro načtení tabulky z databáze Google
