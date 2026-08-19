@@ -1067,10 +1067,10 @@ gameLoop();
 </script>
 
 <!-- ============================================================================
-     🌐 KLASICKÉ NAČTENÍ FIREBASE, KTERÉ PROHLÍŽEČ NIKDY NEZABLOKUJE (CORS BYPASS)
+     🌐 BEZPEČNÉ CDN NAČTENÍ, KTERÉ PROHLÍŽEČ NIKDY NEZABLOKUJE (ŽÁDNÉ CORS CHYBY)
      ============================================================================ -->
-<script src="https://gstatic.com"></script>
-<script src="https://gstatic.com"></script>
+<script src="https://cloudflare.com"></script>
+<script src="https://cloudflare.com"></script>
 
 <!-- ============================================================================
      💌 FORMULÁŘ PRO ZÁPIS DO SVATEBNÍ KNIHY REKORDŮ
@@ -1090,12 +1090,12 @@ gameLoop();
     <div id="obsah-zebricku">Načítám nejlepší výsledky ze svatby...</div>
 </div>
 
-<!-- OBYČEJNÝ JAVASCRIPT BEZ SLOŽITÝCH IMPORTŮ -->
+<!-- OBYČEJNÝ JAVASCRIPT -->
 <script>
     // Konfigurace vašeho projektu svatba-ed782
     const firebaseConfig = {
       apiKey: "AIzaSyDn0V7WhLLIlp0l2tviG1EoYnrAX2dpkFU",
-      authDomain: "svatba-ed782.firebaseapp.com",
+      authDomain: "://firebaseapp.com",
       projectId: "svatba-ed782",
       storageBucket: "svatba-ed782.firebasestorage.app",
       messagingSenderId: "789305181707",
@@ -1105,13 +1105,12 @@ gameLoop();
     // Spuštění klasické Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    console.log("Klasická Firebase úspěšně spuštěna bez CORS chyb!");
+    console.log("Firebase úspěšně spuštěna přes CDNJS bez chyb!");
 
     // Funkce pro načtení tabulky z databáze
     async function obnovitTabulku() {
         const tabulkaDiv = document.getElementById("obsah-zebricku");
         try {
-            // Stáhneme data seřazená podle skóre
             const querySnapshot = await db.collection("zebricek").orderBy("skore", "desc").limit(10).get();
             let hraci = [];
             querySnapshot.forEach((doc) => {
@@ -1143,7 +1142,7 @@ gameLoop();
         }
     }
 
-    // Spustíme načtení tabulky hned po otevření webu
+    // Načtení hned při startu
     obnovitTabulku();
 
     // Reakce na kliknutí na tlačítko "Uložit výsledek"
@@ -1161,7 +1160,6 @@ gameLoop();
         document.getElementById("tlacitko-odeslat").disabled = true;
 
         try {
-            // Uložíme data do Firebase kolekce 'zebricek'
             await db.collection("zebricek").add({
                 jmeno: jmeno,
                 skore: Number(body),
@@ -1171,8 +1169,6 @@ gameLoop();
 
             alert("Tvůj výsledek i vzkaz byly úspěšně uloženy! Děkujeme.");
             document.getElementById("formular-skore").innerHTML = "<p style='color: #2ed573; font-weight: bold;'>Tvoje skóre bylo zapsáno do svatební tabulky rekordů!</p>";
-            
-            // Okamžitě aktualizujeme tabulku novými daty
             obnovitTabulku();
         } catch (chyba) {
             console.error("Chyba při ukládání:", chyba);
