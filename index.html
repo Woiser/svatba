@@ -1093,7 +1093,7 @@ gameLoop();
     async function obnovitTabulku() {
         const tabulkaDiv = document.getElementById("obsah-zebricku");
         try {
-            const querySnapshot = await db.collection("zebricek").orderBy("skore", "desc").limit(10).get();
+            const querySnapshot = await db.collection("zebricek").orderBy("skore", "desc").limit(30).get();
             let hraci = [];
             querySnapshot.forEach((doc) => {
                 hraci.push(doc.data());
