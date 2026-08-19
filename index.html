@@ -967,7 +967,6 @@ function gameLoop() {
 // 🕹️ MECHANIKA OVLÁDÁNÍ SKOKŮ
 // ============================================================================
 function handleAction() {
-    // Pokud hra neběží nebo je konec, kliknutí do plátna ignorujeme, hráč musí kliknout na tlačítko obtížnosti
     if (gameActive === false || gameOver === true || gameWon === true) {
         return; 
     }
@@ -986,36 +985,30 @@ function handleAction() {
         jumpSound.currentTime = 0;
         jumpSound.play().catch(function(e){});
     }    
- // VLNA SKÁKÁNÍ POSTAV
+
+    // VLNA SKÁKÁNÍ POSTAV
     if (currentLevel === 0) {
-        // Pokud je skóre nad 100, skáče holčička, jinak kočka Stela
         if (score > 100) { 
             holcicka.jump(); 
         } else { 
             stela.jump(); 
         }
-        // Ženich Milánek skáče v těsném závěsu se zpožděním 120 milisekund
         setTimeout(function() { 
             milanek.jump(); 
         }, 120);
 
     } else if (currentLevel === 1) {
-        // LEVEL 2: Rozlučka se svobodou – oba hrdinové skáčou naráz bez zpoždění
         milanek.jump();
         verca.jump();
 
     } else if (currentLevel === 2) {
-        // LEVEL 3: Běh k oltáři – nevěsta Verča skáče jako první
         verca.jump();
-        // Ženich Milánek ji následuje se zpožděním 120 milisekund
         setTimeout(function() { 
             milanek.jump(); 
         }, 120);
 
     } else if (currentLevel === 3 || currentLevel === 4) {
-        // LEVEL 4 a 5: Rodinný běh životem a nekonečné manželství
         if (selectedDifficulty === "nemozne" && score >= 60) {
-            // Na extrémní obtížnost od 60 bodů výše skáčou všichni naráz (bez vlnového efektu)
             milanek.jump();
             verca.jump();
             if (score > 100) { holcicka.jump(); } else { stela.jump(); }
@@ -1023,9 +1016,7 @@ function handleAction() {
                 mimino.jump();
             }
         } else {
-            // Standardní vlnový efekt pro běžné hraní
             if (currentLevel === 4 && score > babyTargetScore) {
-                // Pokud už je na scéně i miminko, skáče jako první v zástupu
                 mimino.jump();
                 setTimeout(function() { 
                     if (score > 100) { holcicka.jump(); } else { stela.jump(); } 
@@ -1033,7 +1024,6 @@ function handleAction() {
                 setTimeout(function() { verca.jump(); }, 240);
                 setTimeout(function() { milanek.jump(); }, 360);
             } else {
-                // Pokud miminko ještě nevyběhlo, vlnu startuje kočka Stela nebo holčička
                 if (score > 100) { holcicka.jump(); } else { stela.jump(); }
                 setTimeout(function() { verca.jump(); }, 120);
                 setTimeout(function() { milanek.jump(); }, 240);
@@ -1042,27 +1032,20 @@ function handleAction() {
     }
 }
 
-// ============================================================================
-// ⌨️ POSLUCHAČE UDÁLOSTÍ PRO KLÁVESNICI A MYŠ
-// ============================================================================
+// POSLUCHAČE UDÁLOSTÍ PRO KLÁVESNICI A MYŠ
 window.addEventListener("keydown", function(e) {
     if (e.code === "Space") {
-        e.preventDefault(); // Zamezí posunu stránky dolů při stisku mezerníku
+        e.preventDefault(); 
         handleAction();
     }
 });
 
-// ============================================================================
-// 📱 DOTYKOVÉ OVLÁDÁNÍ PRO MOBILNÍ TELEFONY
-// ============================================================================
 canvas.addEventListener("touchstart", function(e) {
-    e.preventDefault(); // Zamezí nechtěnému dvojitému kliknutí a zoomování na mobilu
+    e.preventDefault(); 
     handleAction();
 }, { passive: false });
 
-// ============================================================================
-// 🏁 NABĚHNUTÍ PRVNÍHO SNÍMKU HERNÍ SMYČKY
-// ============================================================================
+// NABĚHNUTÍ PRVNÍHO SNÍMKU HERNÍ SMYČKY
 gameLoop();
 </script>
 
@@ -1090,12 +1073,11 @@ gameLoop();
     <div id="obsah-zebricku">Načítám nejlepší výsledky ze svatby...</div>
 </div>
 
-<!-- OBYČEJNÝ JAVASCRIPT -->
+<!-- OBYČEJNÝ JAVASCRIPT PRO OVLÁDÁNÍ FIREBASE -->
 <script>
-    // Konfigurace vašeho projektu svatba-ed782
     const firebaseConfig = {
       apiKey: "AIzaSyDn0V7WhLLIlp0l2tviG1EoYnrAX2dpkFU",
-      authDomain: "://firebaseapp.com",
+      authDomain: "svatba-ed782.firebaseapp.com",
       projectId: "svatba-ed782",
       storageBucket: "svatba-ed782.firebasestorage.app",
       messagingSenderId: "789305181707",
@@ -1107,7 +1089,7 @@ gameLoop();
     const db = firebase.firestore();
     console.log("Firebase úspěšně spuštěna přes CDNJS bez chyb!");
 
-    // Funkce pro načtení tabulky z databáze
+    // Funkce pro načtení tabulky z databáze Google
     async function obnovitTabulku() {
         const tabulkaDiv = document.getElementById("obsah-zebricku");
         try {
@@ -1142,14 +1124,14 @@ gameLoop();
         }
     }
 
-    // Načtení hned při startu
+    // Spustíme načtení okamžitě po spuštění webu
     obnovitTabulku();
 
-    // Reakce na kliknutí na tlačítko "Uložit výsledek"
+    // Akce po kliknutí na tlačítko "Uložit můj výsledek"
     document.getElementById("tlacitko-odeslat").addEventListener("click", async () => {
         const jmeno = document.getElementById("hrac-jmeno").value.trim();
         const vzkaz = document.getElementById("hrac-vzkaz").value.trim();
-        const body = score; // Vaše herní proměnná
+        const body = score; // Správně navázáno na skóre hry
 
         if (jmeno === "") {
             alert("Prosím, zadej své jméno, ať víme, komu gratulovat!");
@@ -1168,7 +1150,7 @@ gameLoop();
             });
 
             alert("Tvůj výsledek i vzkaz byly úspěšně uloženy! Děkujeme.");
-            document.getElementById("formular-skore").innerHTML = "<p style='color: #2ed573; font-weight: bold;'>Tvoje skóre bylo zapsáno do svatební tabulky rekordů!</p>";
+            document.getElementById("formular-skore").innerHTML = "<p style='color: #2ed573; font-weight: bold; font-size: 18px;'>Tvoje skóre bylo zapsáno do svatební tabulky rekordů!</p>";
             obnovitTabulku();
         } catch (chyba) {
             console.error("Chyba při ukládání:", chyba);
