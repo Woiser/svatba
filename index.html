@@ -1067,11 +1067,17 @@ gameLoop();
 </script>
 
 <!-- ============================================================================
-     💌 FORMULÁŘ PRO ZÁPIS DO SVATEBNÍ KNIHY REKORDŮ (FIREBASE)
+     🌐 KLASICKÉ NAČTENÍ FIREBASE, KTERÉ PROHLÍŽEČ NIKDY NEZABLOKUJE (CORS BYPASS)
+     ============================================================================ -->
+<script src="https://gstatic.com"></script>
+<script src="https://gstatic.com"></script>
+
+<!-- ============================================================================
+     💌 FORMULÁŘ PRO ZÁPIS DO SVATEBNÍ KNIHY REKORDŮ
      ============================================================================ -->
 <div id="formular-skore" style="text-align: center; margin-top: 20px; font-family: sans-serif; color: black;">
     <h3 style="margin-bottom: 5px;">Skvělý výsledek! Zapiš se do svatební knihy rekordů:</h3>
-    <input type="text" id="hrac-jmeno" placeholder="Tvoje jméno (např. Nepijšvába)" maxlength="20" style="padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc;"><br>
+    <input type="text" id="hrac-jmeno" placeholder="Tvoje jméno (např. Strýc Pepa)" maxlength="20" style="padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc;"><br>
     <input type="text" id="hrac-vzkaz" placeholder="Vzkaz novomanželům (max 30 znaků)" maxlength="30" style="padding: 8px; margin: 5px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"><br>
     <button id="tlacitko-odeslat" style="padding: 10px 20px; margin-top: 10px; cursor: pointer; background-color: #ff4757; color: white; border: none; border-radius: 5px; font-weight: bold;">Uložit můj výsledek</button>
 </div>
@@ -1084,32 +1090,29 @@ gameLoop();
     <div id="obsah-zebricku">Načítám nejlepší výsledky ze svatby...</div>
 </div>
 
-<!-- VŠECHNY FUNKCE FIREBASE SPOJENÉ DO JEDNOHO MÍSTA SE SPRÁVNÝMI ADRESAMI -->
-<script type="module">
-    // Tady jsou ty správné dlouhé adresy, které nikde jinde v kódu nesmí chybět!
-    import { initializeApp } from "https://gstatic.com";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://gstatic.com";
-
+<!-- OBYČEJNÝ JAVASCRIPT BEZ SLOŽITÝCH IMPORTŮ -->
+<script>
+    // Konfigurace vašeho projektu svatba-ed782
     const firebaseConfig = {
       apiKey: "AIzaSyDn0V7WhLLIlp0l2tviG1EoYnrAX2dpkFU",
-      authDomain: "://firebaseapp.com",
+      authDomain: "svatba-ed782.firebaseapp.com",
       projectId: "svatba-ed782",
       storageBucket: "svatba-ed782.firebasestorage.app",
       messagingSenderId: "789305181707",
       appId: "1:789305181707:web:c83e960f07161e7d2ae90e"
     };
 
-    // Spuštění databáze
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    console.log("Firebase úspěšně nastartována uvnitř index.html!");
+    // Spuštění klasické Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    console.log("Klasická Firebase úspěšně spuštěna bez CORS chyb!");
 
     // Funkce pro načtení tabulky z databáze
     async function obnovitTabulku() {
         const tabulkaDiv = document.getElementById("obsah-zebricku");
         try {
-            const q = query(collection(db, "zebricek"), orderBy("skore", "desc"), limit(10));
-            const querySnapshot = await getDocs(q);
+            // Stáhneme data seřazená podle skóre
+            const querySnapshot = await db.collection("zebricek").orderBy("skore", "desc").limit(10).get();
             let hraci = [];
             querySnapshot.forEach((doc) => {
                 hraci.push(doc.data());
@@ -1135,7 +1138,7 @@ gameLoop();
             html += "</table>";
             tabulkaDiv.innerHTML = html;
         } catch (e) {
-            console.error(e);
+            console.error("Chyba při načítání žebříčku:", e);
             tabulkaDiv.innerHTML = "<p>Nepodařilo se načíst výsledky.</p>";
         }
     }
@@ -1158,8 +1161,8 @@ gameLoop();
         document.getElementById("tlacitko-odeslat").disabled = true;
 
         try {
-            // Uložíme data přímo do Firebase kolekce 'zebricek'
-            await addDoc(collection(db, "zebricek"), {
+            // Uložíme data do Firebase kolekce 'zebricek'
+            await db.collection("zebricek").add({
                 jmeno: jmeno,
                 skore: Number(body),
                 vzkaz: vzkaz.substring(0, 30),
