@@ -1101,11 +1101,24 @@ function handleAction() {
 // POSLUCHAČE UDÁLOSTÍ PRO KLÁVESNICI A MYŠ
 window.addEventListener("keydown", function(e) {
     if (e.code === "Space") {
-        e.preventDefault(); 
+
+        // Pokud právě píšeme do formuláře, mezerník má fungovat jako normální mezera
+        const aktivniPrvek = document.activeElement;
+
+        if (
+            aktivniPrvek &&
+            (
+                aktivniPrvek.tagName === "INPUT" ||
+                aktivniPrvek.tagName === "TEXTAREA"
+            )
+        ) {
+            return;
+        }
+
+        e.preventDefault();
         handleAction();
     }
 });
-
 canvas.addEventListener("touchstart", function(e) {
     e.preventDefault(); 
     handleAction();
@@ -1205,7 +1218,7 @@ gameLoop();
         await db.collection("zebricek").add({
             jmeno: jmeno.substring(0, 20),
             skore: Number(score),
-            vzkaz: vzkaz.substring(0, 30),
+            vzkaz: vzkaz.substring(0, 50),
             datum: firebase.firestore.FieldValue.serverTimestamp()
         });
 
