@@ -1066,15 +1066,12 @@ canvas.addEventListener("touchstart", function(e) {
 gameLoop();
 </script>
 
-<!-- 1. NAČTENÍ FIREBASE SOUBORU -->
-<script type="module" src="./firebase.js?v=1"></script>
-
 <!-- ============================================================================
      💌 FORMULÁŘ PRO ZÁPIS DO SVATEBNÍ KNIHY REKORDŮ (FIREBASE)
      ============================================================================ -->
 <div id="formular-skore" style="text-align: center; margin-top: 20px; font-family: sans-serif; color: black;">
     <h3 style="margin-bottom: 5px;">Skvělý výsledek! Zapiš se do svatební knihy rekordů:</h3>
-    <input type="text" id="hrac-jmeno" placeholder="Tvoje jméno (např. Šváb)" maxlength="20" style="padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc;"><br>
+    <input type="text" id="hrac-jmeno" placeholder="Tvoje jméno (např. Nepijšvába)" maxlength="20" style="padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc;"><br>
     <input type="text" id="hrac-vzkaz" placeholder="Vzkaz novomanželům (max 30 znaků)" maxlength="30" style="padding: 8px; margin: 5px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"><br>
     <button id="tlacitko-odeslat" style="padding: 10px 20px; margin-top: 10px; cursor: pointer; background-color: #ff4757; color: white; border: none; border-radius: 5px; font-weight: bold;">Uložit můj výsledek</button>
 </div>
@@ -1087,20 +1084,37 @@ gameLoop();
     <div id="obsah-zebricku">Načítám nejlepší výsledky ze svatby...</div>
 </div>
 
-<!-- 2. OBSLUŽNÝ SKRIPT SE ZÁMKEM -->
+<!-- VŠECHNY FUNKCE FIREBASE SPOJENÉ DO JEDNOHO MÍSTA SE SPRÁVNÝMI ADRESAMI -->
 <script type="module">
-    // Pomocná funkce pro vykreslení tabulky
+    // Tady jsou ty správné dlouhé adresy, které nikde jinde v kódu nesmí chybět!
+    import { initializeApp } from "https://gstatic.com";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://gstatic.com";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDn0V7WhLLIlp0l2tviG1EoYnrAX2dpkFU",
+      authDomain: "://firebaseapp.com",
+      projectId: "svatba-ed782",
+      storageBucket: "svatba-ed782.firebasestorage.app",
+      messagingSenderId: "789305181707",
+      appId: "1:789305181707:web:c83e960f07161e7d2ae90e"
+    };
+
+    // Spuštění databáze
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    console.log("Firebase úspěšně nastartována uvnitř index.html!");
+
+    // Funkce pro načtení tabulky z databáze
     async function obnovitTabulku() {
         const tabulkaDiv = document.getElementById("obsah-zebricku");
-        
-        // ZÁMEK: Pokud se Firebase ještě stahuje, počkáme půl vteřiny a zkusíme to znovu
-        if (typeof window.nactiNejlepsiSkore !== "function") {
-            setTimeout(obnovitTabulku, 500);
-            return;
-        }
-
         try {
-            const hraci = await window.nactiNejlepsiSkore();
+            const q = query(collection(db, "zebricek"), orderBy("skore", "desc"), limit(10));
+            const querySnapshot = await getDocs(q);
+            let hraci = [];
+            querySnapshot.forEach((doc) => {
+                hraci.push(doc.data());
+            });
+
             if (hraci.length === 0) {
                 tabulkaDiv.innerHTML = "<p>Zatím nikdo nehrál. Buď první!</p>";
                 return;
@@ -1121,25 +1135,19 @@ gameLoop();
             html += "</table>";
             tabulkaDiv.innerHTML = html;
         } catch (e) {
+            console.error(e);
             tabulkaDiv.innerHTML = "<p>Nepodařilo se načíst výsledky.</p>";
         }
     }
 
-    // Spustíme bezpečné načítání tabulky
+    // Spustíme načtení tabulky hned po otevření webu
     obnovitTabulku();
-    window.zobrazZebříčekNaWebu = obnovitTabulku;
 
-    // Kliknutí na tlačítko
+    // Reakce na kliknutí na tlačítko "Uložit výsledek"
     document.getElementById("tlacitko-odeslat").addEventListener("click", async () => {
-        // ZÁMEK: Pokud host klikne moc rychle a Firebase ještě neběží
-        if (typeof window.ulozSkore !== "function") {
-            alert("Hra se ještě propojuje s databází, vteřinku strpení a zkuste to znovu!");
-            return;
-        }
-
         const jmeno = document.getElementById("hrac-jmeno").value.trim();
         const vzkaz = document.getElementById("hrac-vzkaz").value.trim();
-        const body = score; 
+        const body = score; // Vaše herní proměnná
 
         if (jmeno === "") {
             alert("Prosím, zadej své jméno, ať víme, komu gratulovat!");
@@ -1149,13 +1157,22 @@ gameLoop();
         document.getElementById("tlacitko-odeslat").innerText = "Odesílám do databáze...";
         document.getElementById("tlacitko-odeslat").disabled = true;
 
-        const uspech = await window.ulozSkore(jmeno, body, vzkaz);
+        try {
+            // Uložíme data přímo do Firebase kolekce 'zebricek'
+            await addDoc(collection(db, "zebricek"), {
+                jmeno: jmeno,
+                skore: Number(body),
+                vzkaz: vzkaz.substring(0, 30),
+                datum: new Date()
+            });
 
-        if (uspech) {
             alert("Tvůj výsledek i vzkaz byly úspěšně uloženy! Děkujeme.");
             document.getElementById("formular-skore").innerHTML = "<p style='color: #2ed573; font-weight: bold;'>Tvoje skóre bylo zapsáno do svatební tabulky rekordů!</p>";
+            
+            // Okamžitě aktualizujeme tabulku novými daty
             obnovitTabulku();
-        } else {
+        } catch (chyba) {
+            console.error("Chyba při ukládání:", chyba);
             alert("Něco se pokazilo. Zkus to prosím znovu.");
             document.getElementById("tlacitko-odeslat").innerText = "Uložit můj výsledek";
             document.getElementById("tlacitko-odeslat").disabled = false;
