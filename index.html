@@ -767,24 +767,23 @@ function gameLoop() {
         ctx.fillText("♾️ N E K O N E Č N O ♾️", canvas.width / 2, 398);
     }
 // ============================================================================
-    // 🎮 HLAVNÍ HERNÍ SMYČKA (2. ČÁST - LOGIKA S MIMINKEM)
+    // 🎮 HLAVNÍ HERNÍ SMYČKA (2. ČÁST - LOGIKA S MIMINKEM A PŘEKÁŽKAMI)
     // ============================================================================
-    if (gameActive === true && gameOver === false && gameWon === false) {// Dynamické změny fyziky pro obtížnost OPILEC podle levelů
+    if (gameActive === true && gameOver === false && gameWon === false) {
+        // Dynamické změny fyziky pro obtížnost OPILEC podle levelů
         if (selectedDifficulty === "opilec") {
             if (currentLevel === 1) { 
-                // LEVEL 2: Normální gravitace a skok jako u dospělého
-                milanek.gravity = verca.gravity = stela.gravity = mimino.gravity = 0.6;
-                milanek.lift = verca.lift = stela.lift = mimino.lift = -12;
+                milanek.gravity = verca.gravity = stela.gravity = mimino.gravity = holcicka.gravity = 0.6;
+                milanek.lift = verca.lift = stela.lift = mimino.lift = holcicka.lift = -12;
             } else if (currentLevel === 2) { 
-                // LEVEL 3: Návrat k plachtění z LEVEL 1
-                milanek.gravity = verca.gravity = stela.gravity = mimino.gravity = 0.2;
-                milanek.lift = verca.lift = stela.lift = mimino.lift = -12;
+                milanek.gravity = verca.gravity = stela.gravity = mimino.gravity = holcicka.gravity = 0.2;
+                milanek.lift = verca.lift = stela.lift = mimino.lift = holcicka.lift = -12;
             } else if (currentLevel >= 3) { 
-                // LEVEL 4 a 5: Normální skok (běžná výška a gravitace)
-                milanek.gravity = verca.gravity = stela.gravity = mimino.gravity = 0.6;
-                milanek.lift = verca.lift = stela.lift = mimino.lift = -12;
+                milanek.gravity = verca.gravity = stela.gravity = mimino.gravity = holcicka.gravity = 0.6;
+                milanek.lift = verca.lift = stela.lift = mimino.lift = holcicka.lift = -12;
             }
         }
+        
         spawnTimer = spawnTimer + 1;
         if (spawnTimer > 90) {
             spawnObstacle();
@@ -800,14 +799,13 @@ function gameLoop() {
             ctx.textAlign = "center";
             ctx.fillText(obs.label, obs.x + 15, obs.y + 25);
             
-            // Kontrola kolizí pro jednotlivé postavy (s podporou pro holčičku)
+            // Kontrola kolizí
             let hitGroom = checkCollision(milanek, obs);
             let hitBride = (currentLevel > 0) && checkCollision(verca, obs);
             let hitBaby = (currentLevel === 4 && score > babyTargetScore) && checkCollision(mimino, obs);
             
             let hitCat = false;
             if (currentLevel === 0 || currentLevel > 2) {
-                // Pokud je skóre nad 100, kontrolujeme náraz do holčičky, jinak do Stely
                 if (score > 100) {
                     hitCat = checkCollision(holcicka, obs);
                 } else {
@@ -817,15 +815,11 @@ function gameLoop() {
             
             if (hitGroom === true || hitBride === true || hitCat === true || hitBaby === true) {
                 if (obs.isStar === true) {
-                    // SEBRÁNÍ HVĚZDY: Přičti 5 bodů, přehraj zvuk a smaž ji
                     score = score + 5;
-                    
-                    starSound.currentTime = 0; // Umožní přehrát cinknutí ihned znovu
+                    starSound.currentTime = 0;
                     starSound.play().catch(function(e){});
-                    
                     obstacles.splice(i, 1);
                     
-                    // Kontrola postupu do dalšího levelu po skokovém navýšení bodů
                     if (score >= LEVELS[currentLevel].target) {
                         if (currentLevel < LEVELS.length - 1) {
                             currentLevel = currentLevel + 1;
@@ -835,12 +829,11 @@ function gameLoop() {
                         }
                     }
                     continue; 
-                                } else {
-                    // NÁRAZ DO PŘEKÁŽKY: Prohra, vypnutí hudby a spuštění zvuku prohry
+                } else {
+                    // NÁRAZ: Konec hry
                     gameOver = true;
                     introMusic.pause();
                     bgMusic.pause();
-                    
                     gameOverSound.currentTime = 0;
                     gameOverSound.play().catch(function(e){});
                 }
@@ -849,27 +842,21 @@ function gameLoop() {
             // Určení nejvíce vpravo stojící postavy v zástupu
             let rightmostX = milanek.x;
             if (currentLevel === 0) {
-                rightmostX = stela.x;
+                rightmostX = (score > 100) ? holcicka.x : stela.x;
             } else if (currentLevel === 1 || currentLevel === 2) {
                 rightmostX = verca.x;
-            } else if (currentLevel === 3) {
-                rightmostX = stela.x;
-            } else if (currentLevel === 4) {
-                if (score > babyTargetScore) {
-                    rightmostX = mimino.x; // Překážka musí minout i miminko (150)
+            } else if (currentLevel === 3 || currentLevel === 4) {
+                if (currentLevel === 4 && score > babyTargetScore) {
+                    rightmostX = mimino.x;
                 } else {
-                    rightmostX = stela.x;
+                    rightmostX = (score > 100) ? holcicka.x : stela.x;
                 }
             }
             
-            // Přičtení bodu po úspěšném překonání celé řady hrdinů
             if (obs.x + obs.width < rightmostX && obs.passed === false) {
                 obs.passed = true;
-                
-                // Klasický +1 bod dáváme pouze za překážky, ne za hvězdy
                 if (obs.isStar !== true) {
                     score = score + 1;
-                    
                     if (score >= LEVELS[currentLevel].target) {
                         if (currentLevel < LEVELS.length - 1) {
                             currentLevel = currentLevel + 1;
@@ -881,26 +868,23 @@ function gameLoop() {
                 }
             }
             
-            // Odstranění překážky za levým okrajem plátna
             if (obs.x + obs.width < 0) {
                 obstacles.splice(i, 1);
             }
         }
     }
     
-    // Zobrazení názvu úrovně a aktuálního skóre v rohu plátna
+    // Zobrazení UI a skóre
     ctx.fillStyle = "#212529";
     ctx.font = "bold 16px Arial";
     ctx.textAlign = "left";
     ctx.fillText(LEVELS[currentLevel].name, 20, 40);
     
     let targetText = LEVELS[currentLevel].target;
-    if (targetText === Infinity) {
-        targetText = "♾️";
-    }
-    ctx.fillText("Skore: " + score + " / " + targetText, 20, 70);
+    if (targetText === Infinity) targetText = "♾️";
+    ctx.fillText("Skóre: " + score + " / " + targetText, 20, 70);
     
-    // ROZHRANÍ: ÚVODNÍ OBRAZOVKA
+    // START SCREEN
     if (gameActive === false) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -912,33 +896,42 @@ function gameLoop() {
         ctx.fillStyle = "#fbcfe8";
         ctx.fillText("Vyber obtížnost níže pro start hry", canvas.width / 2, canvas.height / 2 + 20);
         
-        // Zobrazení menu na startovací ploše
+        let localRecord = localStorage.getItem("milanVercaHighScore") || 0;
+        let localName = localStorage.getItem("milanVercaHighScoreName") || "Nikdo";
+        if (localRecord > 0) {
+            ctx.fillStyle = "#fef08a";
+            ctx.fillText("🏆 REKORD PROHLÍŽEČE: " + localName + " (" + localRecord + " bodů)", canvas.width / 2, canvas.height / 2 + 60);
+        }
         document.getElementById("difficultyMenu").style.display = "flex";
     }
     
-    // ROZHRANÍ: GAME OVER (PROHRA)
+    // GAME OVER SCREEN
     if (gameOver === true) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        if (score > highScore) {
-            highScore = score;
+        // 💾 PERMANENTNÍ UKLÁDÁNÍ REKORDU DO PROHLÍŽEČE
+        let lastHighScore = localStorage.getItem("milanVercaHighScore") ? parseInt(localStorage.getItem("milanVercaHighScore")) : 0;
+        if (score > lastHighScore) {
+            localStorage.setItem("milanVercaHighScore", score);
             let jm = prompt("🎉 NOVÝ REKORD! 🎉\nDosáhl jsi " + score + " bodů!\nNapiš své jméno:");
             if (jm !== null && jm.trim() !== "") {
                 highScoreName = jm.trim();
             } else {
                 highScoreName = "Anonym";
             }
+            localStorage.setItem("milanVercaHighScoreName", highScoreName);
+            highScore = score;
+        } else {
+            highScore = lastHighScore;
+            highScoreName = localStorage.getItem("milanVercaHighScoreName") || "Hráč";
         }
         
         ctx.textAlign = "center";
-
-        // Nový vycentrovaný podtitulek
         ctx.fillStyle = "#f472b6";
         ctx.font = "italic bold 20px Arial";
         ctx.fillText("Žili spolu šťastně i po smrti... 🕊️❤️", canvas.width / 2, canvas.height / 2 - 35);
         
-        // Statistiky a výsledky
         ctx.fillStyle = "white";
         ctx.font = "18px Arial";
         ctx.fillText("Tvůj výsledek: " + score + " bodů (Pokus: " + attempts + ")", canvas.width / 2, canvas.height / 2 + 15);
@@ -951,7 +944,19 @@ function gameLoop() {
         ctx.font = "14px Arial";
         ctx.fillText("Zvol obtížnost níže pro nový pokus", canvas.width / 2, canvas.height / 2 + 95);
         
-        // Zobrazení menu při prohře
+        document.getElementById("difficultyMenu").style.display = "flex";
+    }
+    
+    // VICTORY SCREEN
+    if (gameWon === true) {
+        ctx.fillStyle = "rgba(214, 51, 132, 0.9)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.textAlign = "center";
+        ctx.fillStyle = "white";
+        ctx.font = "bold 30px Arial";
+        ctx.fillText("🎉 VELKÁ SVATBA SE PODAŘILA! 🎉", canvas.width / 2, canvas.height / 2 - 20);
+        ctx.font = "20px Arial";
+        ctx.fillText("Milánek a Verča došli k oltáři! ❤️", canvas.width / 2, canvas.height / 2 + 30);
         document.getElementById("difficultyMenu").style.display = "flex";
     }
     
@@ -962,17 +967,11 @@ function gameLoop() {
 // 🕹️ MECHANIKA OVLÁDÁNÍ SKOKŮ
 // ============================================================================
 function handleAction() {
-    // 🚀 POJISTKA: Pokud hra ještě neběží nebo zrovna skončila, jen ji odstartujeme a ihned skončíme (return)
-    // To zajistí, že se hudba a zvuky skoků nespustí v jedné milisekundě přes sebe
+    // Pokud hra neběží nebo je konec, kliknutí do plátna ignorujeme, hráč musí kliknout na tlačítko obtížnosti
     if (gameActive === false || gameOver === true || gameWon === true) {
-        if (gameOver === true) {
-            attempts = attempts + 1;
-        }
-        startNewGame();
         return; 
     }
 
-    // 🎵 DYNAMICKÝ ZVUK SKOKU (Spustí se jen v aktivní hře)
     if (selectedDifficulty === "opilec") {
         jumpDrunkSound.currentTime = 0;
         jumpDrunkSound.play().catch(function(e){});
@@ -986,20 +985,37 @@ function handleAction() {
     } else {
         jumpSound.currentTime = 0;
         jumpSound.play().catch(function(e){});
-    }
-
-    // VLASTNÍ VLNA SKÁKÁNÍ POSTAV
+    }    
+ // VLNA SKÁKÁNÍ POSTAV
     if (currentLevel === 0) {
-        stela.jump();
-        setTimeout(function() { milanek.jump(); }, 120);
+        // Pokud je skóre nad 100, skáče holčička, jinak kočka Stela
+        if (score > 100) { 
+            holcicka.jump(); 
+        } else { 
+            stela.jump(); 
+        }
+        // Ženich Milánek skáče v těsném závěsu se zpožděním 120 milisekund
+        setTimeout(function() { 
+            milanek.jump(); 
+        }, 120);
+
     } else if (currentLevel === 1) {
+        // LEVEL 2: Rozlučka se svobodou – oba hrdinové skáčou naráz bez zpoždění
         milanek.jump();
         verca.jump();
+
     } else if (currentLevel === 2) {
+        // LEVEL 3: Běh k oltáři – nevěsta Verča skáče jako první
         verca.jump();
-        setTimeout(function() { milanek.jump(); }, 120);
+        // Ženich Milánek ji následuje se zpožděním 120 milisekund
+        setTimeout(function() { 
+            milanek.jump(); 
+        }, 120);
+
     } else if (currentLevel === 3 || currentLevel === 4) {
+        // LEVEL 4 a 5: Rodinný běh životem a nekonečné manželství
         if (selectedDifficulty === "nemozne" && score >= 60) {
+            // Na extrémní obtížnost od 60 bodů výše skáčou všichni naráz (bez vlnového efektu)
             milanek.jump();
             verca.jump();
             if (score > 100) { holcicka.jump(); } else { stela.jump(); }
@@ -1007,7 +1023,9 @@ function handleAction() {
                 mimino.jump();
             }
         } else {
+            // Standardní vlnový efekt pro běžné hraní
             if (currentLevel === 4 && score > babyTargetScore) {
+                // Pokud už je na scéně i miminko, skáče jako první v zástupu
                 mimino.jump();
                 setTimeout(function() { 
                     if (score > 100) { holcicka.jump(); } else { stela.jump(); } 
@@ -1015,6 +1033,7 @@ function handleAction() {
                 setTimeout(function() { verca.jump(); }, 240);
                 setTimeout(function() { milanek.jump(); }, 360);
             } else {
+                // Pokud miminko ještě nevyběhlo, vlnu startuje kočka Stela nebo holčička
                 if (score > 100) { holcicka.jump(); } else { stela.jump(); }
                 setTimeout(function() { verca.jump(); }, 120);
                 setTimeout(function() { milanek.jump(); }, 240);
@@ -1023,22 +1042,130 @@ function handleAction() {
     }
 }
 
-// POSLUCHAČE UDÁLOSTÍ PRO KLÁVESNICI A MYŠ
+// ============================================================================
+// ⌨️ POSLUCHAČE UDÁLOSTÍ PRO KLÁVESNICI A MYŠ
+// ============================================================================
 window.addEventListener("keydown", function(e) {
     if (e.code === "Space") {
-        e.preventDefault();
+        e.preventDefault(); // Zamezí posunu stránky dolů při stisku mezerníku
         handleAction();
     }
 });
 
-// Bleskové ovládání dotykem pro mobilní telefony
+// ============================================================================
+// 📱 DOTYKOVÉ OVLÁDÁNÍ PRO MOBILNÍ TELEFONY
+// ============================================================================
 canvas.addEventListener("touchstart", function(e) {
-    e.preventDefault(); // Zamezí dvojitému kliknutí a zoomování na mobilu
+    e.preventDefault(); // Zamezí nechtěnému dvojitému kliknutí a zoomování na mobilu
     handleAction();
 }, { passive: false });
 
-// NABĚHNUTÍ PRVNÍHO SNÍMKU HERNÍ SMYČKY
+// ============================================================================
+// 🏁 NABĚHNUTÍ PRVNÍHO SNÍMKU HERNÍ SMYČKY
+// ============================================================================
 gameLoop();
 </script>
+
+<!-- ============================================================================
+     💌 FORMULÁŘ PRO ZÁPIS DO SVATEBNÍ KNIHY REKORDŮ (FIREBASE)
+     ============================================================================ -->
+<div id="formular-skore" style="text-align: center; margin-top: 20px; font-family: sans-serif; color: white;">
+    <h3>Skvělý výsledek! Zapiš se do svatební knihy rekordů:</h3>
+    <input type="text" id="hrac-jmeno" placeholder="Tvoje jméno (např. Strýc Pepa)" maxlength="20" style="padding: 8px; margin: 5px; border-radius: 5px; border: none;"><br>
+    <input type="text" id="hrac-vzkaz" placeholder="Vzkaz novomanželům (max 30 znaků)" maxlength="30" style="padding: 8px; margin: 5px; width: 250px; border-radius: 5px; border: none;"><br>
+    <button id="tlacitko-odeslat" style="padding: 10px 20px; margin-top: 10px; cursor: pointer; background-color: #ff4757; color: white; border: none; border-radius: 5px; font-weight: bold;">Uložit můj výsledek</button>
+</div>
+
+<!-- ============================================================================
+     🏆 ZDE JE NOVÁ TABULKA NEJLEPŠÍCH VÝSLEDKŮ SE VZKAZY
+     ============================================================================ -->
+<div id="svatebni-zebricek" style="max-width: 600px; margin: 30px auto; font-family: sans-serif; color: white; text-align: center; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px;">
+    <h2 style="color: #ffd700; margin-top: 0;">🏆 Svatební TOP 10 🏆</h2>
+    <div id="obsah-zebricku">Načítám nejlepší výsledky ze svatby...</div>
+</div>
+
+<script type="module">
+    // Funkce, která stáhne data z Firebase a poskládá je do hezké tabulky
+    async function obnovitTabulku() {
+        const tabulkaDiv = document.getElementById("obsah-zebricku");
+        
+        // Zkontrolujeme, jestli už se načetl náš soubor firebase.js
+        if (typeof window.nactiNejlepsiSkore !== "function") {
+            setTimeout(obnovitTabulku, 1000); // Pokud ne, zkusíme to za vteřinu znovu
+            return;
+        }
+
+        const hraci = await window.nactiNejlepsiSkore();
+
+        if (hraci.length === 0) {
+            tabulkaDiv.innerHTML = "<p>Zatím nikdo nehrál. Buď první!</p>";
+            return;
+        }
+
+        // Začátek HTML tabulky
+        let html = "<table style='width: 100%; border-collapse: collapse; margin-top: 15px;'>";
+        html += "<tr style='border-bottom: 2px solid #ffd700; height: 35px;'><th>Místo</th><th>Jméno</th><th>Skóre</th><th>Vzkaz novomanželům</th></tr>";
+
+        // Projdeme jednoho hráče po druhém a vytvoříme řádky
+        hraci.forEach((hrac, index) => {
+            html += `<tr style='border-bottom: 1px solid rgba(255,255,255,0.1); height: 40px;'>`;
+            html += `<td style='font-weight: bold;'>${index + 1}.</td>`;
+            html += `<td style='text-align: left; padding-left: 10px;'>${hrac.jmeno}</td>`;
+            html += `<td style='color: #ffd700; font-weight: bold;'>${hrac.skore} b.</td>`;
+            html += `<td style='font-style: italic; color: #ddd; text-align: left; padding-left: 10px;'>${hrac.vzkaz || ""}</td>`;
+            html += `</tr>`;
+        });
+
+        html += "</table>";
+        tabulkaDiv.innerHTML = html;
+    }
+
+    // Spustíme načtení tabulky hned, jak host otevře webovou stránku
+    obnovitTabulku();
+
+    // Propojíme to s vaším ukládacím tlačítkem, aby se tabulka ihned překreslila po uložení nového rekordu
+    window.zobrazZebříčekNaWebu = obnovitTabulku;
+</script>
+
+
+<!-- Tady je jeden čistý skript pro obsluhu tlačítka -->
+<script type="module">
+    document.getElementById("tlacitko-odeslat").addEventListener("click", async () => {
+        const jmeno = document.getElementById("hrac-jmeno").value.trim();
+        const vzkaz = document.getElementById("hrac-vzkaz").value.trim();
+        
+        // Správně použitá vaše proměnná 'score'
+        const body = score; 
+
+        if (jmeno === "") {
+            alert("Prosím, zadej své jméno, ať víme, komu gratulovat!");
+            return;
+        }
+
+        // Změna textu na tlačítku při ukládání
+        document.getElementById("tlacitko-odeslat").innerText = "Odesílám do databáze...";
+        document.getElementById("tlacitko-odeslat").disabled = true;
+
+        // Odeslání do vašeho souboru firebase.js
+        const uspech = await window.ulozSkore(jmeno, body, vzkaz);
+
+        if (uspech) {
+            alert("Tvůj výsledek i vzkaz byly úspěšně uloženy! Děkujeme.");
+            document.getElementById("formular-skore").innerHTML = "<p style='color: #2ed573; font-weight: bold;'>Tvoje skóre bylo zapsáno do svatební tabulky rekordů!</p>";
+            
+            // BONUS: Pokud budete mít pod hrou tabulku, tady ji po uložení rovnou aktualizujeme
+            if (typeof window.zobrazZebříčekNaWebu === "function") {
+                window.zobrazZebříčekNaWebu();
+            }
+        } else {
+            alert("Něco se pokazilo. Zkus to prosím znovu.");
+            document.getElementById("tlacitko-odeslat").innerText = "Uložit můj výsledek";
+            document.getElementById("tlacitko-odeslat").disabled = false;
+        }
+    });
+</script>
+
+<!-- Tento řádek je klíčový, ten propojuje váš index.html s firebase.js -->
+<script type="module" src="firebase.js"></script>
 </body>
 </html>
