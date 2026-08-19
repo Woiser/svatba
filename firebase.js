@@ -1,10 +1,10 @@
-// SPRÁVNÉ DLOUHÉ ADRESY PRO STAŽENÍ FIREBASE
+// DLOUHÉ A KOMPLETNÍ ADRESY - BEZ NICH TO NEBUDE FUNGOVAT
 import { initializeApp } from "https://gstatic.com";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://gstatic.com";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDn0V7WhLLIlp0l2tviG1EoYnrAX2dpkFU",
-  authDomain: "svatba-ed782.firebaseapp.com",
+  authDomain: "://firebaseapp.com",
   projectId: "svatba-ed782",
   storageBucket: "svatba-ed782.firebasestorage.app",
   messagingSenderId: "789305181707",
@@ -14,7 +14,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Tady to dáváme do objektu window!
+// Globální funkce pro uložení skóre
 window.ulozSkore = async function(jmeno, body, text) {
     const kratkyText = text.substring(0, 30);
     try {
@@ -32,6 +32,7 @@ window.ulozSkore = async function(jmeno, body, text) {
     }
 }
 
+// Globální funkce pro načtení žebříčku
 window.nactiNejlepsiSkore = async function() {
     try {
         const q = query(collection(db, "zebricek"), orderBy("skore", "desc"), limit(10));
@@ -47,4 +48,5 @@ window.nactiNejlepsiSkore = async function() {
     }
 }
 
+console.log("Firebase plně nastartována!");
 console.log("Firebase plně nastartována!");
